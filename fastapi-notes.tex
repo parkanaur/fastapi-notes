@@ -8,13 +8,14 @@
 \usepackage{setspace}
 \usepackage{listings}
 \usepackage{ulem}
+\usepackage{enumitem}
 
 \title{FastAPI from a CRUDmaker's POV: A Start-to-Finish Example}
 \author{Daniil Kraynov -- \href{https://parkanaur.net}{parkanaur.net}}
 
 \hypersetup{colorlinks=true, urlcolor=blue}
 \onehalfspacing
-
+\setlist{noitemsep}
 \newcommand{\sectionbreak}{\clearpage}
 
 \newcommand{\flink}[1]{\footnote{\href{#1}{#1}}}
@@ -22,13 +23,14 @@
 \lstnewenvironment{code}[1]{\lstset{
     language=#1,
     numbers=none,
-    basicstyle=\ttfamily,
+    basicstyle=\ttfamily\small,
     commentstyle=\color{darkgray}\small,
     keywordstyle=\color{blue}\bfseries,
     morekeywords={*, poetry, git, mv},
     showstringspaces=false,
     xleftmargin=0.35cm,
     framesep=0mm,
+    columns=fullflexible,
     breaklines=true}}{}
 
 \begin{document}
@@ -118,7 +120,7 @@ Time to add a few dependencies. We're building a file hosting app, so we're gonn
 This also installs \textbf{uvicorn[standard]} as per FastAPI installation tutorial.
 
 \begin{code}{bash}
-    # Install our dependency - same as pip install, then freeze > requirements.txt
+    # Install our dependency - same as (pip install + freeze > requirements.txt)
     # If you're using zsh, enclose fastapi[all] in quotes
     poetry add fastapi[all]
 \end{code}
