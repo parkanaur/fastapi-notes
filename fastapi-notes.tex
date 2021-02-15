@@ -19,7 +19,17 @@
 
 \newcommand{\flink}[1]{\footnote{\href{#1}{#1}}}
 
-\lstnewenvironment{code}[1]{\lstset{language=#1,numbers=none,xleftmargin=0.35cm,framesep=0mm}}{}
+\lstnewenvironment{code}[1]{\lstset{
+    language=#1,
+    numbers=none,
+    basicstyle=\ttfamily,
+    commentstyle=\color{darkgray}\small,
+    keywordstyle=\color{blue}\bfseries,
+    morekeywords={*, poetry, git, mv},
+    showstringspaces=false,
+    xleftmargin=0.35cm,
+    framesep=0mm,
+    breaklines=true}}{}
 
 \begin{document}
 
@@ -33,6 +43,8 @@
 FastAPI, a high-performant Python web framework, is very well documented, but the documentation might be a bit too overwhelming for a semi-seasoned developer who already has experience with designing web applications and has a general stance on how they should be structured.
 
 I've started writing this article as a compilation of notes to refer to when writing an app in FastAPI from the ground up. The end result of my initial tinkering with FastAPI, documented here, is a file hosting application with a bunch of extras like Docker integration.
+
+Due to FastAPI being an ASGI framework, deployment process is a little bit different from using nginx and uWSGI, so I hope to cover the deployment caveats as well.
 
 \subsection{Who is this article intended for}
 
@@ -81,14 +93,38 @@ I'll try to follow the incremental model, starting at the very basic things like
 
 \subsection{Setting up environment}
 
-It seems that the good old requirements.txt is slowly falling out of favor within the Python ecosphere, so we're gonna \sout{bite the bullet} follow suit and use the newer toolset (i.e. Poetry \flink{https://python-poetry.org/docs/}). This is a good exercise in using non-standard tooling as well.
+It seems that the good old requirements.txt is slowly falling out of favor within the Python ecosphere, so we're gonna \sout{bite the bullet} follow suit and use the newer toolset (i.e. Poetry). This is a good exercise in using non-standard tooling as well.
+
+Poetry is supposed to make managing virtualenvs and dependencies easier, so let's go ahead and install it \flink{https://python-poetry.org/docs/}.
+
+You can use regular requirements.txt instead - be sure to remove Poetry-related lines and replace them with manual venv creation (python -m venv venv).
 
 \begin{code}{bash}
-    # Project directory
-    mkdir -p ~/code/pyfh && cd ~/code/pyfh
+    # Poetry will create the project directory for you automatically
+    cd ~/code
+    poetry new pyfh
+    cd pyfh
+    git init
+
+    # Virtualenv creation/activation (deactivate with exit)
+    poetry shell
+
+    # Don't @ me
+    mv README.rst README.md
+\end{code}
+
+Time to add a few dependencies. We're building a file hosting app, so we're gonna need a few extras for our FastAPI dependency. It's a good idea to just add the whole \textbf{fastapi[all]} dependency during development - it adds multipart support, as well as a few more goodies, and if you care about the amount of your dependencies, you can clean the unneeded stuff out later.
+
+This also installs \textbf{uvicorn[standard]} as per FastAPI installation tutorial.
+
+\begin{code}{bash}
+    # Install our dependency - same as pip install, then freeze > requirements.txt
+    # If you're using zsh, enclose fastapi[all] in quotes
+    poetry add fastapi[all]
 \end{code}
 
 \subsection{Initial project structure}
+
 First we have to add some boring stuff - a few folders with empty \_\_init.py\_\_'s in them, a barebones main.py file, .gitignore, etc.:
 
 \section{Domain Model and Data Source}
