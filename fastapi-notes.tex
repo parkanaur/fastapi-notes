@@ -16,7 +16,10 @@
 \onehalfspacing
 
 \newcommand{\sectionbreak}{\clearpage}
-\lstset{language=Python}
+
+\newcommand{\flink}[1]{\footnote{\href{#1}{#1}}}
+
+\lstnewenvironment{code}[1]{\lstset{language=#1,numbers=none,xleftmargin=0.35cm,framesep=0mm}}{}
 
 \begin{document}
 
@@ -27,13 +30,13 @@
 
 \section{Introduction}
 
-FastAPI, a high-performant Python web framework, is very well documented, but the documentation might be a bit too overwhelming for a semi-seasoned developer who already has experience with designing web applications and has a general idea on how it should be structured.
+FastAPI, a high-performant Python web framework, is very well documented, but the documentation might be a bit too overwhelming for a semi-seasoned developer who already has experience with designing web applications and has a general stance on how they should be structured.
 
 I've started writing this article as a compilation of notes to refer to when writing an app in FastAPI from the ground up. The end result of my initial tinkering with FastAPI, documented here, is a file hosting application with a bunch of extras like Docker integration.
 
 \subsection{Who is this article intended for}
 
-This article aims to help developers coming from other frameworks (Flask, Django, as well as non-Python ones) who know what they're doing and are willing to jump straight into action but don't feel like getting overwhelmed with deeper aspects of FastAPI's official documentation \footnote{\href{https://fastapi.tiangolo.com}{https://fastapi.tiangolo.com}} (I still advise everyone to read it - it's good on its own and is quite helpful!).
+This article aims to help developers coming from other frameworks (Flask, Django, as well as non-Python ones) who know what they're doing and are willing to jump straight into action but don't feel like getting overwhelmed with deeper aspects of FastAPI's official documentation \flink{https://fastapi.tiangolo.com} (I still advise everyone to read it - it's good on its own and is quite helpful!).
 
 It might also be of good use to beginner developers, but some aspects of this article \textit{might} be harder to understand for them - please give feedback on whether it's a good read or not!
 
@@ -47,17 +50,18 @@ From my experience, the general workflow for producing a mid-sized web applicati
             \item Choosing a data source
             \item Likely some automatic migration scripts
         \end{enumerate}
-    \item Creating an API skeleton for at least one entity (no logic yet)
+    \item Creating an API skeleton for at least one entity
         \begin{enumerate}
             \item Authentication logic
         \end{enumerate}
     \item Adding a business logic layer for at least one entity
     \item Binding it all together
+    \item Adding logic/API for the rest of the entities
     \item {[optional]} Adding a frontend and a bunch of non-logic pages (in parallel with the previous steps or after them, depending on size of the developing team)
     \item {[semi-optional]} Deploy scripts, tests, CI/CD, etc.
 \end{enumerate}
 
-FastAPI's documentation describes or mentions most of these steps, but in no specific order. For an experienced developer there are pages of particular interest (e.g. app structure for bigger applications \footnote{\href{https://fastapi.tiangolo.com/tutorial/bigger-applications/}{https://fastapi.tiangolo.com/tutorial/bigger-applications/}}), but from there you have to go deeper into the documentation in order to find out how to structure your models, DTOs, etc.
+FastAPI's documentation describes or mentions most of these steps, but in no specific order. For an experienced developer there are pages of particular interest (e.g. app structure for bigger applications \flink{https://fastapi.tiangolo.com/tutorial/bigger-applications/}, but from there you have to go deeper into the documentation in order to find out how to structure your models, DTOs, etc.
 
 You'd probably start jumping around more and more around the documentation, get overwhelmed with the amount of points (most likely you wouldn't need all of them at the start of your FastAPI journey), and, in the worst case, lose motivation in learning FastAPI - it happened to me at first, which is a shame, because FastAPI is a beautiful framework!
 
@@ -67,18 +71,22 @@ I don't consider myself an expert in either programming, documentation, or Engli
 
 I encourage you to send your comments regarding this article, whether they're about me doing a good job or being an ignorant fool who doesn't know any better (I'm serious on this one!). Maybe you can think of a few additions as well, in which case you can also fork this article - it's "licensed" under CC0, so you're free to do whatever you want with it.
 
-You can send your comments via GitHub issues/PRs \footnote{\href{https://github.com/parkanaur/fastapi-notes}{https://github.com/parkanaur/fastapi-notes}}
-or by sending an e-mail at {\href{mailto:dan@parkanaur.net}{dan @ parkanaur.net}}. Don't hesitate!
+You can send your comments via GitHub issues/PRs \flink{https://github.com/parkanaur/fastapi-notes} or by sending an e-mail at {\href{mailto:dan@parkanaur.net}{dan @ parkanaur.net}}. Don't hesitate!
 
 \section{Preparations}
 
-The project that I'm going to describe is PyFH \footnote{\href{https://github.com/parkanaur/pyfh}{https://github.com/parkanaur/pyfh}}, a file hosting application designed for self-hosting, with a few additional features like public/private files, timed files, encryption, etc.
+The project that I'm going to describe is PyFH \flink{https://github.com/parkanaur/pyfh}, a file hosting application designed for self-hosting, with a few additional features like public/private files, timed files, encryption, etc.
 
 I'll try to follow the incremental model, starting at the very basic things like setting up environment all the way to deployment on a real world VPS.
 
 \subsection{Setting up environment}
 
-It seems that the good old requirements.txt is slowly falling out of favor within the Python ecosphere, so we're gonna \sout{bite the bullet} follow suit and use the newer toolset (i.e. Pipenv \footnote{\href{https://pipenv.pypa.io/en/latest/}{https://pipenv.pypa.io/en/latest/}}).
+It seems that the good old requirements.txt is slowly falling out of favor within the Python ecosphere, so we're gonna \sout{bite the bullet} follow suit and use the newer toolset (i.e. Poetry \flink{https://python-poetry.org/docs/}). This is a good exercise in using non-standard tooling as well.
+
+\begin{code}{bash}
+    # Project directory
+    mkdir -p ~/code/pyfh && cd ~/code/pyfh
+\end{code}
 
 \subsection{Initial project structure}
 First we have to add some boring stuff - a few folders with empty \_\_init.py\_\_'s in them, a barebones main.py file, .gitignore, etc.:
