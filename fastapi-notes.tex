@@ -2,10 +2,12 @@
 
 \usepackage{titlesec}
 \usepackage{titling}
+\usepackage{url}
 \usepackage[margin=.5in]{geometry}
 \usepackage{xcolor}
 \usepackage{setspace}
 \usepackage{listings}
+\usepackage{graphicx}
 \usepackage{ulem}
 \usepackage{enumitem}
 \usepackage{hyperref}
@@ -150,7 +152,7 @@ Now we're ready to start adding more stuff into the project.
 
 \subsection{Initial project structure}
 
-First we have to add some boring stuff - a few folders with empty \_\_init.py\_\_'s in them, a barebones main.py file, .gitignore, etc.
+First we have to add some boring stuff - a few folders with empty \texttt{\_\_init.py\_\_}'s in them, a barebones main.py file, .gitignore, etc.
 
 \subsubsection{gitignore}
 
@@ -171,7 +173,7 @@ Let's add the simplest \cinline{bash}{main.py} possible for now:
 
     @app.get("/")
     async def test():
-        return "Welcome to pyfh!"
+    return "Welcome to pyfh!"
 \end{code}
 
 Let's try it out. Uvicorn is used to launch ASGI apps \flink{https://www.uvicorn.org/deployment/} (we'll cover production deployment later), --reload enables auto-restart on code changes:
@@ -184,7 +186,49 @@ Let's try it out. Uvicorn is used to launch ASGI apps \flink{https://www.uvicorn
 
 Alternatively you can call \cinline{Python}{uvicorn.run()} in main.py, rather than use the command-line tool.
 
-Then make an HTTP request to 127.0.0.1
+Then make an HTTP request to 127.0.0.1:8000 and you should see something along the lines of the following:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/helloworld.png}
+    \caption{Hello World in FastAPI}
+\end{figure}
+
+\subsubsection{Folders and \texttt{\_\_init.py\_\_'s}}
+
+Time to add some more structure. Files not in the root directory \textbf{are empty} unless otherwise noted.
+
+{\ttfamily
+\begin{itemize}
+    \item{$\sim$/code/pyfh}
+        \begin{itemize}
+            \item{main.py}
+            \item{pyproject.toml}
+            \item{poetry.lock}
+            \item{.gitignore}
+            \item{README.md}
+            \item{Dockerfile *}
+            \item{.dockerignore *}
+            \item{docker-compose.yaml *}
+            \item{pyfh/}
+                \begin{itemize}
+                    \item{\_\_init.py\_\_}
+                    \item{entities/}
+                        \begin{itemize}
+                            \item{\_\_init.py\_\_}
+                            \item{user.py}
+                        \end{itemize}
+                    \item{routes/}
+                        \begin{itemize}
+                            \item{\_\_init.py\_\_}
+                            \item{user.py}
+                        \end{itemize}
+                \end{itemize}
+        \end{itemize}
+\end{itemize}
+}
+
+You may have noticed the presence of Docker-related files. We'll get to writing them later on. As much as I hate to admit it, Docker's just too useful sometimes.
 
 \section{Domain Model and Data Source}
 
