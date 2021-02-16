@@ -13,23 +13,30 @@
 \title{FastAPI from a CRUDmaker's POV: A Start-to-Finish Example}
 \author{Daniil Kraynov -- \href{https://parkanaur.net}{parkanaur.net}}
 
+% Text/list formatting
 \hypersetup{colorlinks=true, urlcolor=blue}
 \onehalfspacing
 \setlist{noitemsep}
 \newcommand{\sectionbreak}{\clearpage}
+\setcounter{tocdepth}{2}
 
+% URL footnotes and note macro
 \newcommand{\flink}[1]{\footnote{\href{#1}{#1}}}
 \newcommand{\note}{\textbf{\color{red}Note: }}
 
+% Generic code listing style - c means code, not C
 \lstdefinestyle{cstyle}{
-    numbers=none,
+    numbers=left,
     basicstyle=\ttfamily\small,
     commentstyle=\color{darkgray}\small,
     keywordstyle=\color{blue}\bfseries,
     morekeywords={*, poetry, git, mv, python},
     showstringspaces=false,
-    xleftmargin=0.35cm,
+    aboveskip=0.5cm,
+    xleftmargin=0.5cm,
     framesep=0mm,
+    frame=tb,
+    framexleftmargin=0.75cm,
     columns=fullflexible,
     breaklines=true}
 
@@ -37,12 +44,14 @@
     language=#1,
     style=cstyle}}{}
 
+% Inline code
 \newcommand{\cinline}[2]{{\lstinline[language=#1, style=cstyle]{#2}}}
 
 \begin{document}
 
 \maketitle
 
+% TOC
 {\hypersetup{linkcolor=black}
 \tableofcontents}
 
@@ -125,7 +134,7 @@ Time to add a few dependencies. We're building a file hosting app, so we're gonn
 
 \textbf{fastapi[all]} also installs \textbf{uvicorn[standard]} as per FastAPI installation tutorial.
 
-\note Most of the bash commands will imply that you have activated your virtualenv (\cinline{bash}{poetry shell})
+\note Most of the bash commands will imply that you have activated your virtualenv (\cinline{bash}{poetry shell}).
 
 \begin{code}{bash}
     # Install our dependency - same as (pip install + freeze > requirements.txt)
@@ -133,9 +142,13 @@ Time to add a few dependencies. We're building a file hosting app, so we're gonn
     poetry add fastapi[all]
 \end{code}
 
+Now we're ready to start adding more stuff into the project.
+
 \subsection{Initial project structure}
 
-First we have to add some boring stuff - a few folders with empty \_\_init.py\_\_'s in them, a barebones main.py file, .gitignore, etc.:
+First we have to add some boring stuff - a few folders with empty \_\_init.py\_\_'s in them, a barebones main.py file, .gitignore, etc.
+
+\subsubsection{Gitignore}
 
 \section{Domain Model and Data Source}
 
