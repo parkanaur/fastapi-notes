@@ -4,11 +4,11 @@
 \usepackage{titling}
 \usepackage[margin=.5in]{geometry}
 \usepackage{xcolor}
-\usepackage{hyperref}
 \usepackage{setspace}
 \usepackage{listings}
 \usepackage{ulem}
 \usepackage{enumitem}
+\usepackage{hyperref}
 
 \title{FastAPI from a CRUDmaker's POV: A Start-to-Finish Example}
 \author{Daniil Kraynov -- \href{https://parkanaur.net}{parkanaur.net}}
@@ -19,19 +19,25 @@
 \newcommand{\sectionbreak}{\clearpage}
 
 \newcommand{\flink}[1]{\footnote{\href{#1}{#1}}}
+\newcommand{\note}{\textbf{\color{red}Note: }}
 
-\lstnewenvironment{code}[1]{\lstset{
-    language=#1,
+\lstdefinestyle{cstyle}{
     numbers=none,
     basicstyle=\ttfamily\small,
     commentstyle=\color{darkgray}\small,
     keywordstyle=\color{blue}\bfseries,
-    morekeywords={*, poetry, git, mv},
+    morekeywords={*, poetry, git, mv, python},
     showstringspaces=false,
     xleftmargin=0.35cm,
     framesep=0mm,
     columns=fullflexible,
-    breaklines=true}}{}
+    breaklines=true}
+
+\lstnewenvironment{code}[1]{\lstset{
+    language=#1,
+    style=cstyle}}{}
+
+\newcommand{\cinline}[2]{{\lstinline[language=#1, style=cstyle]{#2}}}
 
 \begin{document}
 
@@ -52,7 +58,7 @@ Due to FastAPI being an ASGI framework, deployment process is a little bit diffe
 
 This article aims to help developers coming from other frameworks (Flask, Django, as well as non-Python ones) who know what they're doing and are willing to jump straight into action but don't feel like getting overwhelmed with deeper aspects of FastAPI's official documentation \flink{https://fastapi.tiangolo.com} (I still advise everyone to read it - it's good on its own and is quite helpful!).
 
-It might also be of good use to beginner developers, but some aspects of this article \textit{might} be harder to understand for them - please give feedback on whether it's a good read or not!
+It could also be of good use to beginner developers, but some aspects of this article \textit{might} be harder to understand for them - please give feedback on whether it's a good read or not!
 
 \subsection{Application structure}
 
@@ -89,7 +95,7 @@ You can send your comments via GitHub issues/PRs \flink{https://github.com/parka
 
 \section{Preparations}
 
-The project that I'm going to describe is PyFH \flink{https://github.com/parkanaur/pyfh}, a file hosting application designed for self-hosting, with a few additional features like public/private files, timed files, encryption, etc.
+The project that I'm going to describe is \textbf{PyFH} \flink{https://github.com/parkanaur/pyfh}, a file hosting application designed for self-hosting, with a few additional features like public/private files, timed files, encryption, etc.
 
 I'll try to follow the incremental model, starting at the very basic things like setting up environment all the way to deployment on a real world VPS.
 
@@ -99,7 +105,7 @@ It seems that the good old requirements.txt is slowly falling out of favor withi
 
 Poetry is supposed to make managing virtualenvs and dependencies easier, so let's go ahead and install it \flink{https://python-poetry.org/docs/}.
 
-You can use regular requirements.txt instead - be sure to remove Poetry-related lines and replace them with manual venv creation (python -m venv venv).
+You can use regular requirements.txt instead - be sure to remove Poetry-related lines and replace them with manual venv creation (\cinline{bash}{python -m venv venv}).
 
 \begin{code}{bash}
     # Poetry will create the project directory for you automatically
@@ -117,7 +123,9 @@ You can use regular requirements.txt instead - be sure to remove Poetry-related 
 
 Time to add a few dependencies. We're building a file hosting app, so we're gonna need a few extras for our FastAPI dependency. It's a good idea to just add the whole \textbf{fastapi[all]} dependency during development - it adds multipart support, as well as a few more goodies, and if you care about the amount of your dependencies, you can clean the unneeded stuff out later.
 
-This also installs \textbf{uvicorn[standard]} as per FastAPI installation tutorial.
+\textbf{fastapi[all]} also installs \textbf{uvicorn[standard]} as per FastAPI installation tutorial.
+
+\note Most of the bash commands will imply that you have activated your virtualenv (\cinline{bash}{poetry shell})
 
 \begin{code}{bash}
     # Install our dependency - same as (pip install + freeze > requirements.txt)
