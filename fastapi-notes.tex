@@ -30,7 +30,11 @@
     basicstyle=\ttfamily\small,
     commentstyle=\color{darkgray}\small,
     keywordstyle=\color{blue}\bfseries,
-    morekeywords={*, poetry, git, mv, python},
+    morekeywords={*,
+    % bash
+    poetry, git, mv, python,
+    % Python
+    async},
     showstringspaces=false,
     aboveskip=0.5cm,
     xleftmargin=0.5cm,
@@ -45,7 +49,7 @@
     style=cstyle}}{}
 
 % Inline code
-\newcommand{\cinline}[2]{{\lstinline[language=#1, style=cstyle]{#2}}}
+\newcommand{\cinline}[2]{{\lstinline[language=#1, style=cstyle, basicstyle=\ttfamily\normalsize]{#2}}}
 
 \begin{document}
 
@@ -130,9 +134,9 @@ You can use regular requirements.txt instead - be sure to remove Poetry-related 
     mv README.rst README.md
 \end{code}
 
-Time to add a few dependencies. We're building a file hosting app, so we're gonna need a few extras for our FastAPI dependency. It's a good idea to just add the whole \textbf{fastapi[all]} dependency during development - it adds multipart support, as well as a few more goodies, and if you care about the amount of your dependencies, you can clean the unneeded stuff out later.
+Time to add a few dependencies. We're building a file hosting app, so we're gonna need a few extras for our FastAPI dependency. It's a good idea to just add the whole \texttt{fastapi[all]} dependency during development - it adds multipart support, as well as a few more goodies, and if you care about the amount of your dependencies, you can clean the unneeded stuff out later.
 
-\textbf{fastapi[all]} also installs \textbf{uvicorn[standard]} as per FastAPI installation tutorial.
+\texttt{fastapi[all]} also installs \texttt{uvicorn[standard]} as per FastAPI installation tutorial.
 
 \note Most of the bash commands will imply that you have activated your virtualenv (\cinline{bash}{poetry shell}).
 
@@ -148,7 +152,39 @@ Now we're ready to start adding more stuff into the project.
 
 First we have to add some boring stuff - a few folders with empty \_\_init.py\_\_'s in them, a barebones main.py file, .gitignore, etc.
 
-\subsubsection{Gitignore}
+\subsubsection{gitignore}
+
+Github's Python gitignore will do just fine \flink{https://github.com/github/gitignore/blob/master/Python.gitignore}.
+
+\note You don't need to add \texttt{poetry.lock} to .gitignore - it's used to freeze currently installed (on your machine) package versions (similar to versions in \texttt{requirements.txt}). Poetry will make use of that file in other developers' machines to produce the same environment as you. You can later run \cinline{bash}{poetry update} to use newer package versions.
+
+\subsubsection{main.py}
+
+This is similar to \texttt{main.py/wsgi.py} in Flask - an ASGI server will use it as a starting point for your application (same as passing \texttt{main:app} to uWSGI, if you will).
+
+Let's add the simplest \cinline{bash}{main.py} possible for now:
+
+\begin{code}{Python}
+    from fastapi import FastAPI
+
+    app = FastAPI()
+
+    @app.get("/")
+    async def test():
+        return "Welcome to pyfh!"
+\end{code}
+
+Let's try it out. Uvicorn is used to launch ASGI apps \flink{https://www.uvicorn.org/deployment/} (we'll cover production deployment later), --reload enables auto-restart on code changes:
+
+\begin{code}{bash}
+    uvicorn main:app --reload
+    # ..... ^^^^---- main.py
+    # ..... -----^^^ app = FastAPI()
+\end{code}
+
+Alternatively you can call \cinline{Python}{uvicorn.run()} in main.py, rather than use the command-line tool.
+
+Then make an HTTP request to 127.0.0.1
 
 \section{Domain Model and Data Source}
 
