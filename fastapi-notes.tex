@@ -32,11 +32,6 @@
     basicstyle=\ttfamily\small,
     commentstyle=\color{darkgray}\small,
     keywordstyle=\color{blue}\bfseries,
-    morekeywords={*,
-    % bash
-    poetry, git, mv, python,
-    % Python
-    async},
     showstringspaces=false,
     aboveskip=0.5cm,
     xleftmargin=0.5cm,
@@ -46,12 +41,17 @@
     columns=fullflexible,
     breaklines=true}
 
-\lstnewenvironment{code}[1]{\lstset{
-    language=#1,
-    style=cstyle}}{}
-
-% Inline code
+% Generic code listings
+\lstnewenvironment{code}[1]{\lstset{language=#1, style=cstyle}}{}
 \newcommand{\cinline}[2]{{\lstinline[language=#1, style=cstyle, basicstyle=\ttfamily\normalsize]{#2}}}
+
+% Python code listings
+\lstnewenvironment{pycode}{\lstset{language=Python, style=cstyle, morekeywords={async}}}{}
+\newcommand{\pyinline}[1]{\lstinline[language=Python, style=cstyle, morekeywords={async}, basicstyle=\ttfamily\normalsize]{#1}}
+
+% Bash code listings
+\lstnewenvironment{bashcode}{\lstset{language=bash, style=cstyle, morekeywords={poetry, git, mv, python, uvicorn}}}{}
+\newcommand{\bashinline}[1]{\lstinline[language=bash, style=cstyle, morekeywords={poetry, git, mv, python, uvicorn}, basicstyle=\ttfamily\normalsize]{#1}}
 
 \begin{document}
 
@@ -75,7 +75,7 @@ This article aims to help developers coming from other frameworks (Flask, Django
 
 It could also be of good use to beginner developers, but some aspects of this article \textit{might} be harder to understand for them - please give feedback on whether it's a good read or not!
 
-\subsection{Application structure}
+\subsection{Application building steps}
 
 From my experience, the general workflow for producing a mid-sized web application is as follows:
 
@@ -120,9 +120,9 @@ It seems that the good old requirements.txt is slowly falling out of favor withi
 
 Poetry is supposed to make managing virtualenvs and dependencies easier, so let's go ahead and install it \flink{https://python-poetry.org/docs/}.
 
-You can use regular requirements.txt instead - be sure to remove Poetry-related lines and replace them with manual venv creation (\cinline{bash}{python -m venv venv}).
+You can use regular requirements.txt instead - be sure to remove Poetry-related lines and replace them with manual venv creation (\bashinline{python -m venv venv}).
 
-\begin{code}{bash}
+\begin{bashcode}
     # Poetry will create the project directory for you automatically
     cd ~/code
     poetry new pyfh
@@ -134,19 +134,19 @@ You can use regular requirements.txt instead - be sure to remove Poetry-related 
 
     # Don't @ me
     mv README.rst README.md
-\end{code}
+\end{bashcode}
 
 Time to add a few dependencies. We're building a file hosting app, so we're gonna need a few extras for our FastAPI dependency. It's a good idea to just add the whole \texttt{fastapi[all]} dependency during development - it adds multipart support, as well as a few more goodies, and if you care about the amount of your dependencies, you can clean the unneeded stuff out later.
 
 \texttt{fastapi[all]} also installs \texttt{uvicorn[standard]} as per FastAPI installation tutorial.
 
-\note Most of the bash commands will imply that you have activated your virtualenv (\cinline{bash}{poetry shell}).
+\note Most of the bash commands will imply that you have activated your virtualenv (\bashinline{poetry shell}).
 
-\begin{code}{bash}
+\begin{bashcode}
     # Install our dependency - same as (pip install + freeze > requirements.txt)
     # If you're using zsh, enclose fastapi[all] in quotes
     poetry add fastapi[all]
-\end{code}
+\end{bashcode}
 
 Now we're ready to start adding more stuff into the project.
 
@@ -154,19 +154,19 @@ Now we're ready to start adding more stuff into the project.
 
 First we have to add some boring stuff - a few folders with empty \texttt{\_\_init.py\_\_}'s in them, a barebones main.py file, .gitignore, etc.
 
-\subsubsection{gitignore}
+\subsubsection{\texttt{gitignore}}
 
 Github's Python gitignore will do just fine \flink{https://github.com/github/gitignore/blob/master/Python.gitignore}.
 
-\note You don't need to add \texttt{poetry.lock} to .gitignore - it's used to freeze currently installed (on your machine) package versions (similar to versions in \texttt{requirements.txt}). Poetry will make use of that file in other developers' machines to produce the same environment as you. You can later run \cinline{bash}{poetry update} to use newer package versions.
+\note You don't need to add \texttt{poetry.lock} to .gitignore - it's used to freeze currently installed (on your machine) package versions (similar to versions in \texttt{requirements.txt}). Poetry will make use of that file in other developers' machines to produce the same environment as you. You can later run \bashinline{poetry update} to use newer package versions.
 
-\subsubsection{main.py}
+\subsubsection{\texttt{main.py}}
 
 This is similar to \texttt{main.py/wsgi.py} in Flask - an ASGI server will use it as a starting point for your application (same as passing \texttt{main:app} to uWSGI, if you will).
 
-Let's add the simplest \cinline{bash}{main.py} possible for now:
+Let's add the simplest \texttt{main.py} possible for now:
 
-\begin{code}{Python}
+\begin{pycode}
     from fastapi import FastAPI
 
     app = FastAPI()
@@ -174,9 +174,11 @@ Let's add the simplest \cinline{bash}{main.py} possible for now:
     @app.get("/")
     async def test():
     return "Welcome to pyfh!"
-\end{code}
+\end{pycode}
 
-Let's try it out. Uvicorn is used to launch ASGI apps \flink{https://www.uvicorn.org/deployment/} (we'll cover production deployment later), --reload enables auto-restart on code changes:
+Note the \pyinline{async} keyword - it's used extensively in FastAPI. Asynchronous programming is a topic which isn't covered extensively in this article, but what you should know is that in most of the cases it really speeds things up. It is native to FastAPI development, in particular to path operations (\pyinline{fastapi.get(), .post()}, etc.) - read more at the official documentation \flink{https://fastapi.tiangolo.com/async/}.
+
+Let's try the code out. Uvicorn is used to launch ASGI apps \flink{https://www.uvicorn.org/deployment/} (we'll cover production deployment later), --reload enables auto-restart on code changes:
 
 \begin{code}{bash}
     uvicorn main:app --reload
@@ -184,7 +186,7 @@ Let's try it out. Uvicorn is used to launch ASGI apps \flink{https://www.uvicorn
     # ..... -----^^^ app = FastAPI()
 \end{code}
 
-Alternatively you can call \cinline{Python}{uvicorn.run()} in main.py, rather than use the command-line tool.
+Alternatively you can call \texttt{uvicorn.run()} in main.py, rather than use the command-line tool.
 
 Then make an HTTP request to 127.0.0.1:8000 and you should see something along the lines of the following:
 
@@ -230,7 +232,9 @@ Time to add some more structure. Files not in the root directory \textbf{are emp
 
 You may have noticed the presence of Docker-related files. We'll get to writing them later on. As much as I hate to admit it, Docker's just too useful sometimes.
 
-\section{Domain Model and Data Source}
+\subsection{Data source setup and configuration files}
+
+\section{Domain Model}
 
 \subsection{Creating entities}
 
