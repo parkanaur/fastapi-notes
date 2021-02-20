@@ -21,7 +21,7 @@
 \onehalfspacing
 \setlist{noitemsep}
 \newcommand{\sectionbreak}{\clearpage}
-\setcounter{tocdepth}{2}
+%\setcounter{tocdepth}{2}
 
 % URL footnotes and note macro
 \newcommand{\flink}[1]{\footnote{\href{#1}{#1}}}
@@ -55,8 +55,8 @@
 \newcommand{\pyinline}[1]{\lstinline[language=Python, style=cstyle, morekeywords={async}, basicstyle=\ttfamily\normalsize]{#1}}
 
 % Bash code listings
-\lstnewenvironment{bashcode}[1][]{\lstset{language=bash, caption=#1, style=cstyle, morekeywords={poetry, git, mv, python, uvicorn}}}{}
-\newcommand{\bashinline}[1]{\lstinline[language=bash, style=cstyle, morekeywords={poetry, git, mv, python, uvicorn}, basicstyle=\ttfamily\normalsize]{#1}}
+\lstnewenvironment{bashcode}[1][]{\lstset{language=bash, caption=#1, style=cstyle, morekeywords={docker, poetry, git, mv, python, uvicorn}}}{}
+\newcommand{\bashinline}[1]{\lstinline[language=bash, style=cstyle, morekeywords={docker, poetry, git, mv, python, uvicorn}, basicstyle=\ttfamily\normalsize]{#1}}
 
 \begin{document}
 
@@ -159,12 +159,6 @@ Now we're ready to start adding more stuff into the project.
 
 First we have to add some boring stuff - a few folders with empty \texttt{\_\_init.py\_\_}'s in them, a barebones main.py file, .gitignore, etc.
 
-\subsubsection{\texttt{gitignore}}
-
-Github's Python gitignore will do just fine \flink{https://github.com/github/gitignore/blob/master/Python.gitignore}.
-
-\note You don't need to add \texttt{poetry.lock} to .gitignore - it's used to freeze currently installed (on your machine) package versions (similar to versions in \texttt{requirements.txt}). Poetry will make use of that file on other developers' machines to produce the same environment you have. You can later run \bashinline{poetry update} to use newer package versions.
-
 \subsubsection{\texttt{main.py}}
 
 This is similar to \texttt{main.py/wsgi.py} in Flask - an ASGI server will use it as a starting point for your application (same as passing \texttt{main:app} to uWSGI, if you will).
@@ -203,7 +197,7 @@ Then make an HTTP request to 127.0.0.1:8000 and you should see something along t
 
 \subsubsection{Folders and \texttt{\_\_init.py\_\_'s}}
 
-Time to add some more structure. Files not in the root directory \textbf{are empty} unless otherwise noted.
+Time to add some more structure. Files not in the root directory \textbf{are empty} unless otherwise noted. To save time, I'll assume you know what \texttt{\_\_init.py\_\_'s} are for.
 
 {\ttfamily
 \begin{itemize}
@@ -214,6 +208,7 @@ Time to add some more structure. Files not in the root directory \textbf{are emp
             \item{poetry.lock}
             \item{.gitignore}
             \item{README.md}
+            \item{.env}
             \item{Dockerfile *}
             \item{.dockerignore *}
             \item{docker-compose.yaml *}
@@ -238,9 +233,21 @@ Time to add some more structure. Files not in the root directory \textbf{are emp
 
 You may have noticed the presence of Docker-related files. We'll put Docker to good use in the next section. As much as I hate to admit it, Docker's just too useful sometimes.
 
+\subsubsection{\texttt{gitignore}}
+
+Github's Python gitignore will do just fine \flink{https://github.com/github/gitignore/blob/master/Python.gitignore}, but read the notes below.
+
+\note You don't need to add \texttt{poetry.lock} to .gitignore - it's used to freeze currently installed (on your machine) package versions (similar to versions in \texttt{requirements.txt}). Poetry will make use of that file on other developers' machines to produce the same environment you have. You can later run \bashinline{poetry update} to use newer package versions.
+
+\note Be sure to add \texttt{.env} to your .gitignore if you follow the structure above. We'll only use that .env file for development purposes, and it's generally \textbf{not recommended} to keep configuration data inside your codebase. When preparing your code for production deployment, make sure to keep .env files in a secure location.
+
 \subsection{Docker and configuration files}
 
+I firmly believe that for a project with more than a few files of code it is important that you deal with configuration and deployment details as early as possible.
+
 Setting up proper configuration for your project can be hard, especially if you want it to be easy to use in production later on and have little experience in starting projects from scratch.
+
+\subsubsection{Environment variables}
 
 It is common practice to use \textbf{environment variables} as configuration source for applications. They're used extensively in Docker and Docker Compose too.
 
@@ -267,9 +274,49 @@ It is also common to write \textbf{env files} (prefixed with dot: \textbf{.env})
     VAR_INT_VALUE=12
 \end{bashcode}
 
+\subsubsection{Managing configuration in FastAPI with Pydantic}
+
 You could make use of \pyinline{os.getenv}, but FastAPI docs suggest a different way, and it's much more elegant.
 
 FastAPI utilizes at its core Pydantic, a data validation library, to check what's coming from users. It is also used for settings management \flink{https://pydantic-docs.helpmanual.io/usage/settings/}, and it makes working with configurations a breeze.
+
+We have created a separate \textbf{config.py} for managing project configuration - let's use it. Right now we only need database info - the rest will be added as needed.
+
+\begin{pycode}[\texttt{pyfh/config.py}]
+    from pydantic import BaseSettings
+
+
+    class Settings(BaseSettings):
+        db_host: str = "127.0.0.1"
+        db_port: int = 5432
+
+        # Nested "Config" classes are used by Pydantic classes for additional base classes configuration,
+        # e.g. env file location for BaseSettings / orm mode usage for Pydantic models (BaseModel)
+        class Config:
+            env_file = ".env"
+            #case_sensitive = False
+\end{pycode}
+
+\note Pydantic reads environment variables in a \textbf{case-insensitive} way:
+
+\begin{bashcode}[\texttt{.env}]
+    db_host=10.0.12.23
+    DB_PORT=5000
+\end{bashcode}
+
+You can change that behavior by uncommenting the line in the \pyinline{Settings.Config} class.
+
+The order in which Pydantic reads environment variables is as follows:
+
+\begin{enumerate}
+    \item If defined, exported (not in the \textbf{.env}) variables are used
+    \item If defined, the \textbf{.env} variables are used
+    \item Fallback to default values (127.0.0.1 and 5432 in our case)
+\end{enumerate}
+
+That means \bashinline{export DB\_HOST=10.0.0.1} will take precedence over \\\bashinline{DB\_HOST=127.0.0.1} in \textbf{.env}.
+
+\note If you're using development and/or deployment via Docker/Docker Compose, you most probably \textbf{don't} need to use env file configuration in a Pydantic class - generally environment variables are defined and passed to applications in Docker via \bashinline{docker run -e} or \bashinline{docker run} \texttt{--env-file} or \texttt{env\_file} field in \texttt{docker-compose.yml}.
 
 \section{Domain Model}
 
