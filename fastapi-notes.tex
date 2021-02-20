@@ -5,6 +5,7 @@
 \usepackage{url}
 \usepackage[margin=.5in]{geometry}
 \usepackage{xcolor}
+\usepackage{lipsum}
 \usepackage{setspace}
 \usepackage{listings}
 \usepackage{caption}
@@ -47,15 +48,15 @@
 \renewcommand{\lstlistlistingname}{List of \lstlistingname s}
 
 % Generic code listings
-\lstnewenvironment{code}[2][]{\lstset{language=#1, caption=#2, style=cstyle}}{}
+\lstnewenvironment{code}[2][]{\lstset{language=#1, caption=#2, style=cstyle, escapeinside={(*@}{@*)}}}{}
 \newcommand{\cinline}[2]{{\lstinline[language=#1, style=cstyle, basicstyle=\ttfamily\normalsize]{#2}}}
 
 % Python code listings
-\lstnewenvironment{pycode}[1][]{\lstset{language=Python, caption=#1, style=cstyle, morekeywords={async}}}{}
+\lstnewenvironment{pycode}[1][]{\lstset{language=Python, caption=#1, style=cstyle, morekeywords={async}, escapeinside={(*@}{@*)}}}{}
 \newcommand{\pyinline}[1]{\lstinline[language=Python, style=cstyle, morekeywords={async}, basicstyle=\ttfamily\normalsize]{#1}}
 
 % Bash code listings
-\lstnewenvironment{bashcode}[1][]{\lstset{language=bash, caption=#1, style=cstyle, morekeywords={docker, poetry, git, mv, python, uvicorn}}}{}
+\lstnewenvironment{bashcode}[1][]{\lstset{language=bash, caption=#1, style=cstyle, morekeywords={docker, poetry, git, mv, python, uvicorn}, escapeinside={(*@}{@*)}}}{}
 \newcommand{\bashinline}[1]{\lstinline[language=bash, style=cstyle, morekeywords={docker, poetry, git, mv, python, uvicorn}, basicstyle=\ttfamily\normalsize]{#1}}
 
 \begin{document}
@@ -282,7 +283,7 @@ FastAPI utilizes at its core Pydantic, a data validation library, to check what'
 
 We have created a separate \textbf{config.py} for managing project configuration - let's use it. Right now we only need database info - the rest will be added as needed.
 
-\begin{pycode}[\texttt{pyfh/config.py}]
+\begin{pycode}[\texttt{pyfh/config.py}\label{config.py1}]
     from pydantic import BaseSettings
 
 
@@ -295,9 +296,11 @@ We have created a separate \textbf{config.py} for managing project configuration
         class Config:
             env_file = ".env"
             #case_sensitive = False
+
+    settings = Settings() (*@ \label{config.py1:si} @*)
 \end{pycode}
 
-\note Pydantic reads environment variables in a \textbf{case-insensitive} way:
+\note Pydantic reads environment variables in a \textbf{case-insensitive} way. In the following file, both variables are eligible to be read into the class above:
 
 \begin{bashcode}[\texttt{.env}]
     db_host=10.0.12.23
@@ -314,9 +317,17 @@ The order in which Pydantic reads environment variables is as follows:
     \item Fallback to default values (127.0.0.1 and 5432 in our case)
 \end{enumerate}
 
-That means \bashinline{export DB\_HOST=10.0.0.1} will take precedence over \\\bashinline{DB\_HOST=127.0.0.1} in \textbf{.env}.
+That means \bashinline{export DB\_HOST=10.0.0.1} will take precedence over \\\bashinline{DB\_HOST=127.0.0.1} from \textbf{.env}.
 
-\note If you're using development and/or deployment via Docker/Docker Compose, you most probably \textbf{don't} need to use env file configuration in a Pydantic class - generally environment variables are defined and passed to applications in Docker via \bashinline{docker run -e} or \bashinline{docker run} \texttt{--env-file} or \texttt{env\_file} field in \texttt{docker-compose.yml}.
+\note If you're using development and/or deployment via Docker/Docker Compose, you most probably \textbf{don't} need to use env file configuration in a Pydantic class - in this case environment variables are defined and passed to applications using one of the following means:
+
+\begin{itemize}
+    \item \bashinline{docker run -e VAR_NAME=var_value}
+    \item \bashinline{docker run} \texttt{--env-file}
+    \item \texttt{env\_file} field in \texttt{docker-compose.yml}.
+\end{itemize}
+
+All required environment variables are then read by Pydantic when \pyinline{Settings} is initialized as a variable (see line \ref{config.py1:si}) in File \ref{config.py1}).
 
 \section{Domain Model}
 
