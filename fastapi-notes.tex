@@ -7,6 +7,7 @@
 \usepackage{xcolor}
 \usepackage{setspace}
 \usepackage{listings}
+\usepackage{caption}
 \usepackage{graphicx}
 \usepackage{ulem}
 \usepackage{enumitem}
@@ -41,16 +42,20 @@
     columns=fullflexible,
     breaklines=true}
 
+\captionsetup[lstlisting]{margin=0cm}
+\renewcommand{\lstlistingname}{File}
+\renewcommand{\lstlistlistingname}{List of \lstlistingname s}
+
 % Generic code listings
-\lstnewenvironment{code}[1]{\lstset{language=#1, style=cstyle}}{}
+\lstnewenvironment{code}[2][]{\lstset{language=#1, caption=#2, style=cstyle}}{}
 \newcommand{\cinline}[2]{{\lstinline[language=#1, style=cstyle, basicstyle=\ttfamily\normalsize]{#2}}}
 
 % Python code listings
-\lstnewenvironment{pycode}{\lstset{language=Python, style=cstyle, morekeywords={async}}}{}
+\lstnewenvironment{pycode}[1][]{\lstset{language=Python, caption=#1, style=cstyle, morekeywords={async}}}{}
 \newcommand{\pyinline}[1]{\lstinline[language=Python, style=cstyle, morekeywords={async}, basicstyle=\ttfamily\normalsize]{#1}}
 
 % Bash code listings
-\lstnewenvironment{bashcode}{\lstset{language=bash, style=cstyle, morekeywords={poetry, git, mv, python, uvicorn}}}{}
+\lstnewenvironment{bashcode}[1][]{\lstset{language=bash, caption=#1, style=cstyle, morekeywords={poetry, git, mv, python, uvicorn}}}{}
 \newcommand{\bashinline}[1]{\lstinline[language=bash, style=cstyle, morekeywords={poetry, git, mv, python, uvicorn}, basicstyle=\ttfamily\normalsize]{#1}}
 
 \begin{document}
@@ -136,7 +141,7 @@ You can use regular requirements.txt instead - be sure to remove Poetry-related 
     mv README.rst README.md
 \end{bashcode}
 
-Time to add a few dependencies. We're building a file hosting app, so we're gonna need a few extras for our FastAPI dependency. It's a good idea to just add the whole \texttt{fastapi[all]} dependency during development - it adds multipart support, as well as a few more goodies, and if you care about the amount of your dependencies, you can clean the unneeded stuff out later.
+Time to add dependencies. We're building a file hosting app, so we're gonna need a few extras for our FastAPI dependency. It's a good idea to just add the whole \texttt{fastapi[all]} dependency during development - it adds multipart support, as well as a few more goodies, and if you care about the amount of your dependencies, you can clean the unneeded stuff out later.
 
 \texttt{fastapi[all]} also installs \texttt{uvicorn[standard]} as per FastAPI installation tutorial.
 
@@ -158,7 +163,7 @@ First we have to add some boring stuff - a few folders with empty \texttt{\_\_in
 
 Github's Python gitignore will do just fine \flink{https://github.com/github/gitignore/blob/master/Python.gitignore}.
 
-\note You don't need to add \texttt{poetry.lock} to .gitignore - it's used to freeze currently installed (on your machine) package versions (similar to versions in \texttt{requirements.txt}). Poetry will make use of that file in other developers' machines to produce the same environment as you. You can later run \bashinline{poetry update} to use newer package versions.
+\note You don't need to add \texttt{poetry.lock} to .gitignore - it's used to freeze currently installed (on your machine) package versions (similar to versions in \texttt{requirements.txt}). Poetry will make use of that file on other developers' machines to produce the same environment you have. You can later run \bashinline{poetry update} to use newer package versions.
 
 \subsubsection{\texttt{main.py}}
 
@@ -173,18 +178,18 @@ Let's add the simplest \texttt{main.py} possible for now:
 
     @app.get("/")
     async def test():
-    return "Welcome to pyfh!"
+        return "Welcome to pyfh!"
 \end{pycode}
 
 Note the \pyinline{async} keyword - it's used extensively in FastAPI. Asynchronous programming is a topic which isn't covered extensively in this article, but what you should know is that in most of the cases it really speeds things up. It is native to FastAPI development, in particular to path operations (\pyinline{fastapi.get(), .post()}, etc.) - read more at the official documentation \flink{https://fastapi.tiangolo.com/async/}.
 
 Let's try the code out. Uvicorn is used to launch ASGI apps \flink{https://www.uvicorn.org/deployment/} (we'll cover production deployment later), --reload enables auto-restart on code changes:
 
-\begin{code}{bash}
+\begin{bashcode}
     uvicorn main:app --reload
     # ..... ^^^^---- main.py
     # ..... -----^^^ app = FastAPI()
-\end{code}
+\end{bashcode}
 
 Alternatively you can call \texttt{uvicorn.run()} in main.py, rather than use the command-line tool.
 
@@ -215,6 +220,7 @@ Time to add some more structure. Files not in the root directory \textbf{are emp
             \item{pyfh/}
                 \begin{itemize}
                     \item{\_\_init.py\_\_}
+                    \item{config.py}
                     \item{entities/}
                         \begin{itemize}
                             \item{\_\_init.py\_\_}
@@ -230,9 +236,40 @@ Time to add some more structure. Files not in the root directory \textbf{are emp
 \end{itemize}
 }
 
-You may have noticed the presence of Docker-related files. We'll get to writing them later on. As much as I hate to admit it, Docker's just too useful sometimes.
+You may have noticed the presence of Docker-related files. We'll put Docker to good use in the next section. As much as I hate to admit it, Docker's just too useful sometimes.
 
-\subsection{Data source setup and configuration files}
+\subsection{Docker and configuration files}
+
+Setting up proper configuration for your project can be hard, especially if you want it to be easy to use in production later on and have little experience in starting projects from scratch.
+
+It is common practice to use \textbf{environment variables} as configuration source for applications. They're used extensively in Docker and Docker Compose too.
+
+In Linux, env variables are set the following way:
+
+\begin{bashcode}
+    export VAR_NAME="var_value"
+    export VAR_INT_VALUE=12
+\end{bashcode}
+
+In Python you read them the following way:
+
+\begin{pycode}
+    import os
+    # default value argument is optional
+    var_name = os.getenv("VAR_NAME", "default value") # -> "var_value"
+    var_int_value = os.getenv("VAR_INT_VALUE") # -> '12' <- note that os.getenv always returns a string
+\end{pycode}
+
+It is also common to write \textbf{env files} (prefixed with dot: \textbf{.env}) to store environment variables in. You may have noticed files that look like this when working with Docker images:
+
+\begin{bashcode}[\texttt{.env} (example)]
+    VAR_NAME=var_value
+    VAR_INT_VALUE=12
+\end{bashcode}
+
+You could make use of \pyinline{os.getenv}, but FastAPI docs suggest a different way, and it's much more elegant.
+
+FastAPI utilizes at its core Pydantic, a data validation library, to check what's coming from users. It is also used for settings management \flink{https://pydantic-docs.helpmanual.io/usage/settings/}, and it makes working with configurations a breeze.
 
 \section{Domain Model}
 
