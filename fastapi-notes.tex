@@ -329,6 +329,18 @@ That means \bashinline{export DB\_HOST=10.0.0.1} will take precedence over \\\ba
 
 All required environment variables are then read by Pydantic when \pyinline{Settings} is initialized as a variable (see line \ref{config.py1:si}) in File \ref{config.py1}).
 
+If you still have questions, read up on official FastAPI docs for settings management, which should answer them all \flink{https://fastapi.tiangolo.com/advanced/settings}.
+
+\subsection{Docker configuration}
+
+\note While you certainly can make do without Docker, integrating it into your workflow could save a lot of time during development of deployment routines and during deployment itself.
+
+\subsubsection{Dockerfile}
+
+\subsubsection{docker-compose.yaml}
+
+\subsubsection{.dockerignore}
+
 \section{Domain Model}
 
 \subsection{Creating entities}
