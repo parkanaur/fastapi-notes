@@ -24,9 +24,10 @@
 \newcommand{\sectionbreak}{\clearpage}
 %\setcounter{tocdepth}{2}
 
-% URL footnotes and note macro
+% URL footnotes and some text macros
 \newcommand{\flink}[1]{\footnote{\href{#1}{#1}}}
 \newcommand{\note}{\textbf{\color{red}Note: }}
+\newcommand{\optional}{{\rmfamily\bfseries\color{gray} [optional] }}
 
 % Generic code listing style - c means code, not C
 \lstdefinestyle{cstyle}{
@@ -98,8 +99,8 @@ From my experience, the general workflow for producing a mid-sized web applicati
     \item Adding a business logic layer for at least one entity
     \item Binding it all together
     \item Adding logic/API for the rest of the entities
-    \item {[optional]} Adding a frontend and a bunch of non-logic pages (in parallel with the previous steps or after them, depending on size of the developing team)
-    \item {[semi-optional]} Deploy scripts, tests, CI/CD, etc.
+    \item \optional Adding a frontend and a bunch of non-logic pages (in parallel with the previous steps or after them, depending on size of the developing team)
+    \item \optional Deploy scripts, tests, CI/CD, etc.
 \end{enumerate}
 
 FastAPI's documentation describes or mentions most of these steps, but in no specific order. For an experienced developer there are pages of particular interest (e.g. app structure for bigger applications \flink{https://fastapi.tiangolo.com/tutorial/bigger-applications/}, but from there you have to go deeper into the documentation in order to find out how to structure your models, DTOs, etc.
@@ -178,7 +179,7 @@ Let's add the simplest \texttt{main.py} possible for now:
 
 Note the \pyinline{async} keyword - it's used extensively in FastAPI. Asynchronous programming is a topic which isn't covered extensively in this article, but what you should know is that in most of the cases it really speeds things up. It is native to FastAPI development, in particular to path operations (\pyinline{fastapi.get(), .post()}, etc.) - read more at the official documentation \flink{https://fastapi.tiangolo.com/async/}.
 
-Let's try the code out. Uvicorn is used to launch ASGI apps \flink{https://www.uvicorn.org/deployment/} (we'll cover production deployment later), --reload enables auto-restart on code changes:
+Let's try the code out. Uvicorn is used to launch ASGI apps \flink{https://www.uvicorn.org/deployment/} (we'll cover production deployment later), \texttt{--reload} enables auto-restart on code changes:
 
 \begin{bashcode}
     uvicorn main:app --reload
@@ -202,37 +203,37 @@ Time to add some more structure. Files not in the root directory \textbf{are emp
 
 {\ttfamily
 \begin{itemize}
-    \item{$\sim$/code/pyfh}
+    \item $\sim$/code/pyfh
         \begin{itemize}
-            \item{main.py}
-            \item{pyproject.toml}
-            \item{poetry.lock}
-            \item{.gitignore}
-            \item{README.md}
-            \item{.env}
-            \item{Dockerfile *}
-            \item{.dockerignore *}
-            \item{docker-compose.yaml *}
-            \item{pyfh/}
+            \item main.py
+            \item pyproject.toml
+            \item poetry.lock
+            \item .gitignore
+            \item README.md
+            \item \optional .env
+            \item Dockerfile *
+            \item .dockerignore *
+            \item docker-compose.yaml *
+            \item pyfh/
                 \begin{itemize}
-                    \item{\_\_init.py\_\_}
-                    \item{config.py}
-                    \item{entities/}
+                    \item \_\_init.py\_\_
+                    \item config.py
+                    \item entities/
                         \begin{itemize}
-                            \item{\_\_init.py\_\_}
-                            \item{user.py}
+                            \item \_\_init.py\_\_
+                            \item user.py
                         \end{itemize}
                     \item{routes/}
                         \begin{itemize}
-                            \item{\_\_init.py\_\_}
-                            \item{user.py}
+                            \item \_\_init.py\_\_
+                            \item user.py
                         \end{itemize}
                 \end{itemize}
         \end{itemize}
 \end{itemize}
 }
 
-You may have noticed the presence of Docker-related files. We'll put Docker to good use in the next section. As much as I hate to admit it, Docker's just too useful sometimes.
+* You may have noticed the presence of Docker-related files. We'll put Docker to good use in the next section. As much as I hate to admit it, Docker's just too useful sometimes.
 
 \subsubsection{\texttt{gitignore}}
 
@@ -323,8 +324,8 @@ That means \bashinline{export DB\_HOST=10.0.0.1} will take precedence over \\\ba
 
 \begin{itemize}
     \item \bashinline{docker run -e VAR_NAME=var_value}
-    \item \bashinline{docker run} \texttt{--env-file}
-    \item \texttt{env\_file} field in \texttt{docker-compose.yml}.
+    \item \bashinline{docker run} \texttt{--env-file filename}
+    \item \texttt{env\_file} field in \texttt{docker-compose.yml}
 \end{itemize}
 
 All required environment variables are then read by Pydantic when \pyinline{Settings} is initialized as a variable (see line \ref{config.py1:si}) in File \ref{config.py1}).
@@ -335,11 +336,11 @@ If you still have questions, read up on official FastAPI docs for settings manag
 
 \note While you certainly can make do without Docker, integrating it into your workflow could save a lot of time during development of deployment routines and during deployment itself.
 
-\subsubsection{Dockerfile}
+\subsubsection{\texttt{Dockerfile}}
 
-\subsubsection{docker-compose.yaml}
+\subsubsection{\texttt{docker-compose.yaml}}
 
-\subsubsection{.dockerignore}
+\subsubsection{\texttt{.dockerignore}}
 
 \section{Domain Model}
 
