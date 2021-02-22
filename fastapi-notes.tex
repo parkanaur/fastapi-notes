@@ -23,6 +23,7 @@
 \setlist{noitemsep}
 \newcommand{\sectionbreak}{\clearpage}
 %\setcounter{tocdepth}{2}
+%\setcounter{secnumdepth}{4}
 
 % URL footnotes and some text macros
 \newcommand{\flink}[1]{\footnote{\href{#1}{#1}}}
@@ -59,6 +60,19 @@
 % Bash code listings
 \lstnewenvironment{bashcode}[1][]{\lstset{language=bash, caption=#1, style=cstyle, morekeywords={docker, poetry, git, mv, python, uvicorn}, escapeinside={(*@}{@*)}}}{}
 \newcommand{\bashinline}[1]{\lstinline[language=bash, style=cstyle, morekeywords={docker, poetry, git, mv, python, uvicorn}, basicstyle=\ttfamily\normalsize]{#1}}
+
+% Docker code listings
+\lstdefinelanguage{docker}{
+    basicstyle=\ttfamily\small,
+    keywords={FROM, RUN, COPY, ADD, ENTRYPOINT, CMD,  ENV, ARG, WORKDIR, EXPOSE, LABEL, USER, VOLUME, STOPSIGNAL, ONBUILD, MAINTAINER},
+    keywordstyle=\color{blue}\bfseries,
+    identifierstyle=\color{black},
+    sensitive=false,
+    comment=[l]{\#},
+    commentstyle=\color{darkgray}\small
+}
+\lstnewenvironment{dockercode}[1][]{\lstset{language=docker, caption=#1, style=cstyle, escapeinside={(*@}{@*)}}}{}
+\newcommand{\dockerinline}[1]{\lstinline[language=docker, style=cstyle, basicstyle=\ttfamily\normalsize]{#1}}
 
 \begin{document}
 
@@ -243,7 +257,7 @@ Github's Python gitignore will do just fine \flink{https://github.com/github/git
 
 \note Be sure to add \texttt{.env} to your .gitignore if you follow the structure above. We'll only use that .env file for development purposes, and it's generally \textbf{not recommended} to keep configuration data inside your codebase. When preparing your code for production deployment, make sure to keep .env files in a secure location.
 
-\subsection{Docker and configuration files}
+\subsection{Configuration files}
 
 I firmly believe that for a project with more than a few files of code it is important that you deal with configuration and deployment details as early as possible.
 
@@ -292,11 +306,11 @@ We have created a separate \textbf{config.py} for managing project configuration
         db_host: str = "127.0.0.1"
         db_port: int = 5432
 
-        # Nested "Config" classes are used by Pydantic classes for additional base classes configuration,
-        # e.g. env file location for BaseSettings / orm mode usage for Pydantic models (BaseModel)
-        class Config:
-            env_file = ".env"
-            #case_sensitive = False
+    # Nested "Config" classes are used by Pydantic classes for additional base classes configuration,
+    # e.g. env file location for BaseSettings / orm mode usage for Pydantic models (BaseModel)
+    class Config:
+        env_file = ".env"
+        #case_sensitive = False
 
     settings = Settings() (*@ \label{config.py1:si} @*)
 \end{pycode}
@@ -334,13 +348,29 @@ If you still have questions, read up on official FastAPI docs for settings manag
 
 \subsection{Docker configuration}
 
-\note While you certainly can make do without Docker, integrating it into your workflow could save a lot of time during development of deployment routines and during deployment itself.
+In layman's terms, a Docker image is a packaged environment (like virtualenv) which contains your project and which can be configured, deployed and run in one command on any Linux machine which has Docker server installed.
+
+While you certainly can make do without Docker, integrating it into your workflow could save a lot of time during development of deployment routines and during deployment itself.
 
 \subsubsection{\texttt{Dockerfile}}
+
+Dockerfile dictates how a Docker image for the project is built.
+
+One option would be writing your image from scratch (i.e. by starting with an OS or Python image: \dockerinline{FROM ubuntu:18.04} / \dockerinline{FROM python:3.9.2-slim}), in which case you'll have to do some more work, like adding Python or web servers (nginx, gunicorn, etc), yourself.
+
+Another option would be using more advanced images which include most of the needed tools. FastAPI's author has provided developers with a few useful images with support for all tools required for proper FastAPI production deployment. The one we're going to use in this guide is \texttt{tiangolo/uvicorn-gunicorn-fastapi} \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker}.
+
+That image automatically includes and sets up Uvicorn and Gunicorn (more on that later), and actually launches your application from a fixed Python file location (i.e. you create the file in that location and the image reads that file during deployment).
 
 \subsubsection{\texttt{docker-compose.yaml}}
 
 \subsubsection{\texttt{.dockerignore}}
+
+Dockerignore is to Docker what gitignore is to git. You don't want to include intermediate files in your image to save space, and you don't want sensitive data left behind as well.
+
+\subsection{Technical Details}
+
+\subsubsection{On Gunicorn, Uvicorn and Nginx integration}
 
 \section{Domain Model}
 
