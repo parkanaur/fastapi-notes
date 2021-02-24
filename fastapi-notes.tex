@@ -71,7 +71,8 @@
 % Docker code listings
 \lstdefinelanguage{docker}{
     basicstyle=\ttfamily\small,
-    keywords={FROM, RUN, COPY, ADD, ENTRYPOINT, CMD,  ENV, ARG, WORKDIR, EXPOSE, LABEL, USER, VOLUME, STOPSIGNAL, ONBUILD, MAINTAINER},
+    keywords={FROM, RUN, COPY, ADD, ENTRYPOINT, CMD,  ENV, ARG, WORKDIR, EXPOSE, LABEL, USER, VOLUME, STOPSIGNAL, ONBUILD, MAINTAINER,
+    image, environment, ports, container\_name, ports, links, build, version, volumes, services, networks},
     keywordstyle=\color{blue}\bfseries,
     identifierstyle=\color{black},
     sensitive=false,
@@ -234,7 +235,7 @@ Time to add some more structure. Files not in the root directory \textbf{are emp
             \item \optional .env
             \item Dockerfile *
             \item .dockerignore *
-            \item docker-compose.yaml *
+            \item docker-compose.yml *
             \item pyfh/
                 \begin{itemize}
                     \item \_\_init.py\_\_
@@ -343,7 +344,7 @@ The order in which Pydantic reads environment variables is as follows:
 
 That means \bashinline{export DB\_HOST=10.0.0.1} will take precedence over \bashinline{DB\_HOST=127.0.0.1} from \textbf{.env}.
 
-\note If you're using development and/or deployment via Docker/Docker Compose, you most probably \textbf{don't} need to use env file configuration in a Pydantic class - in this case environment variables are defined and passed to applications using one of the following means:
+\note If you're using development and/or deployment via Docker/Docker Compose, you most probably \textbf{don't} need to use env file configuration in a Pydantic class - in this case environment variables are defined and passed to the application using one of the following means:
 
 \begin{itemize}
     \item \bashinline{docker run -e VAR_NAME=var_value}
@@ -401,18 +402,29 @@ COPY ./pyproject.toml ./poetry.lock* /app/
 COPY ./pyfh /app
         \end{dockercode}
         This method still has the drawback of having to conform to variable naming and is more error-prone in general, since you now have to keep track of in-image project structure, as well as adjust the rest of the project (tests, CI, etc.)}
-    \item{Use environment variables via \dockerinline{docker run -e} (see Docker environment variables passing in Section \ref{preparations:configenv}) or Docker Compose. In the image we're using, you can pass your new main file location (via \texttt{MODULE\_NAME}), FastAPI app variable name (\texttt{VARIABLE\_NAME}), and so on \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#advanced-usage}. We'll use that option when writing a Docker Compose file (Section \ref{preparations:dockercompose})}
+
+    \item{Use environment variables via \dockerinline{docker run -e} (see Docker environment variables passing in Section \ref{preparations:configenv}) or Docker Compose. In the image we're using, you can pass your new main file location (via the \texttt{MODULE\_NAME} variable), FastAPI app variable name (\texttt{VARIABLE\_NAME}), and so on \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#advanced-usage}. We'll use that option when writing a Docker Compose file (Section \ref{preparations:dockercompose})}
 \end{itemize}
 
-\subsubsection{\texttt{docker-compose.yaml}\label{preparations:dockercompose}}
+\subsubsection{\texttt{docker-compose.yml}\label{preparations:dockercompose}}
+
+Docker Compose allows you to define, execute, and manage a single-/multicontainer application using YAML files. In our case, apart from the FastAPI application, we're going to be using a PostgreSQL database (in its own conatiner) and a frontend application (we'll worry about that later). Let's look at our \texttt{docker-compose.yml}:
+
+\begin{dockercode}
+
+\end{dockercode}
 
 \subsubsection{\texttt{.dockerignore}}
 
-Dockerignore is to Docker what gitignore is to git. You don't want to include intermediate files in your image to save space, and you don't want sensitive data left behind as well.
+Dockerignore is to Docker what gitignore is to git. You don't want to include intermediate files in your image to save space, and you don't want sensitive data left behind as well. The rule of thumb is that you include everything you'd include in \texttt{.gitignore} plus a few more additions to reduce image size (e.g. \texttt{.git} folder).
 
-\subsection{Technical Details}
+\subsection{Technical details}
 
 \subsubsection{On Gunicorn, Uvicorn and Nginx integration}
+
+\subsubsection{Nginx: inside or outside of Docker?}
+
+\subsubsection{Docker cache invalidation and command order}
 
 \section{Domain Model}
 
