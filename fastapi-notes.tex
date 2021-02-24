@@ -1,4 +1,4 @@
-\documentclass[14pt]{extarticle}
+\documentclass{article}
 
 \usepackage{titlesec}
 \usepackage{titling}
@@ -25,16 +25,23 @@
 %\setcounter{tocdepth}{2}
 %\setcounter{secnumdepth}{4}
 
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
 % URL footnotes and some text macros
 \newcommand{\flink}[1]{\footnote{\href{#1}{#1}}}
 \newcommand{\note}{\textbf{\color{red}Note: }}
 \newcommand{\optional}{{\rmfamily\bfseries\color{gray} [optional] }}
 
 % Generic code listing style - c means code, not C
+\definecolor{darkgreen}{RGB}{0, 100, 0}
+
 \lstdefinestyle{cstyle}{
     numbers=left,
     basicstyle=\ttfamily\small,
-    commentstyle=\color{darkgray}\small,
+    commentstyle=\color{darkgreen}\small,
     keywordstyle=\color{blue}\bfseries,
     showstringspaces=false,
     aboveskip=0.5cm,
@@ -144,17 +151,17 @@ Poetry is supposed to make managing virtualenvs and dependencies easier, so let'
 You can use regular requirements.txt instead - be sure to remove Poetry-related lines and replace them with manual venv creation (\bashinline{python -m venv venv}).
 
 \begin{bashcode}
-    # Poetry will create the project directory for you automatically
-    cd ~/code
-    poetry new pyfh
-    cd pyfh
-    git init
+# Poetry will create the project directory for you automatically
+cd ~/code
+poetry new pyfh
+cd pyfh
+git init
 
-    # Virtualenv creation/activation (deactivate with exit)
-    poetry shell
+# Virtualenv creation/activation (deactivate with exit)
+poetry shell
 
-    # Don't @ me
-    mv README.rst README.md
+# Don't @ me
+mv README.rst README.md
 \end{bashcode}
 
 Time to add dependencies. We're building a file hosting app, so we're gonna need a few extras for our FastAPI dependency. It's a good idea to just add the whole \texttt{fastapi[all]} dependency during development - it adds multipart support, as well as a few more goodies, and if you care about the amount of your dependencies, you can clean the unneeded stuff out later.
@@ -164,9 +171,9 @@ Time to add dependencies. We're building a file hosting app, so we're gonna need
 \note Most of the bash commands will imply that you have activated your virtualenv (\bashinline{poetry shell}).
 
 \begin{bashcode}
-    # Install our dependency - same as (pip install + freeze > requirements.txt)
-    # If you're using zsh, enclose fastapi[all] in quotes
-    poetry add fastapi[all]
+# Install our dependency - same as (pip install + freeze > requirements.txt)
+# If you're using zsh, enclose fastapi[all] in quotes
+poetry add fastapi[all]
 \end{bashcode}
 
 Now we're ready to start adding more stuff into the project.
@@ -182,13 +189,13 @@ This is similar to \texttt{main.py/wsgi.py} in Flask - an ASGI server will use i
 Let's add the simplest \texttt{main.py} possible for now:
 
 \begin{pycode}
-    from fastapi import FastAPI
+from fastapi import FastAPI
 
-    app = FastAPI()
+app = FastAPI()
 
-    @app.get("/")
-    async def test():
-        return "Welcome to pyfh!"
+@app.get("/")
+async def test():
+    return "Welcome to pyfh!"
 \end{pycode}
 
 Note the \pyinline{async} keyword - it's used extensively in FastAPI. Asynchronous programming is a topic which isn't covered extensively in this article, but what you should know is that in most of the cases it really speeds things up. It is native to FastAPI development, in particular to path operations (\pyinline{fastapi.get(), .post()}, etc.) - read more at the official documentation \flink{https://fastapi.tiangolo.com/async/}.
@@ -196,9 +203,9 @@ Note the \pyinline{async} keyword - it's used extensively in FastAPI. Asynchrono
 Let's try the code out. Uvicorn is used to launch ASGI apps \flink{https://www.uvicorn.org/deployment/} (we'll cover production deployment later), \texttt{--reload} enables auto-restart on code changes:
 
 \begin{bashcode}
-    uvicorn main:app --reload
-    # ..... ^^^^---- main.py
-    # ..... -----^^^ app = FastAPI()
+uvicorn main:app --reload
+# ..... ^^^^---- main.py
+# ..... -----^^^ app = FastAPI()
 \end{bashcode}
 
 Alternatively you can call \texttt{uvicorn.run()} in main.py, rather than use the command-line tool.
@@ -270,17 +277,17 @@ It is common practice to use \textbf{environment variables} as configuration sou
 In Linux, env variables are set the following way:
 
 \begin{bashcode}
-    export VAR_NAME="var_value"
-    export VAR_INT_VALUE=12
+export VAR_NAME="var_value"
+export VAR_INT_VALUE=12
 \end{bashcode}
 
 In Python you read them the following way:
 
 \begin{pycode}
-    import os
-    # default value argument is optional
-    var_name = os.getenv("VAR_NAME", "default value") # -> "var_value"
-    var_int_value = os.getenv("VAR_INT_VALUE") # -> '12' <- note that os.getenv always returns a string
+import os
+# default value argument is optional
+var_name = os.getenv("VAR_NAME", "default value") # -> "var_value"
+var_int_value = os.getenv("VAR_INT_VALUE") # -> "12" <- note that os.getenv always returns a string
 \end{pycode}
 
 It is also common to write \textbf{env files} (prefixed with dot: \textbf{.env}) to store environment variables in. You may have noticed files that look like this when working with Docker images:
@@ -290,7 +297,7 @@ It is also common to write \textbf{env files} (prefixed with dot: \textbf{.env})
     VAR_INT_VALUE=12
 \end{bashcode}
 
-\subsubsection{Managing configuration in FastAPI with Pydantic}
+\subsubsection{Managing configuration in FastAPI with Pydantic \label{preparations:configenv}}
 
 You could make use of \pyinline{os.getenv}, but FastAPI docs suggest a different way, and it's much more elegant.
 
@@ -299,12 +306,12 @@ FastAPI utilizes at its core Pydantic, a data validation library, to check what'
 We have created a separate \textbf{config.py} for managing project configuration - let's use it. Right now we only need database info - the rest will be added as needed.
 
 \begin{pycode}[\texttt{pyfh/config.py}\label{config.py1}]
-    from pydantic import BaseSettings
+from pydantic import BaseSettings
 
 
-    class Settings(BaseSettings):
-        db_host: str = "127.0.0.1"
-        db_port: int = 5432
+class Settings(BaseSettings):
+    db_host: str = "127.0.0.1"
+    db_port: int = 5432
 
     # Nested "Config" classes are used by Pydantic classes for additional base classes configuration,
     # e.g. env file location for BaseSettings / orm mode usage for Pydantic models (BaseModel)
@@ -312,14 +319,16 @@ We have created a separate \textbf{config.py} for managing project configuration
         env_file = ".env"
         #case_sensitive = False
 
-    settings = Settings() (*@ \label{config.py1:si} @*)
+settings = Settings() (*@ \label{config.py1:si} @*)
 \end{pycode}
+
+All required environment variables are then read by Pydantic when \pyinline{Settings} is initialized as a variable on line \ref{config.py1:si}.
 
 \note Pydantic reads environment variables in a \textbf{case-insensitive} way. In the following file, both variables are eligible to be read into the class above:
 
 \begin{bashcode}[\texttt{.env}]
-    db_host=10.0.12.23
-    DB_PORT=5000
+db_host=10.0.12.23
+DB_PORT=5000
 \end{bashcode}
 
 You can change that behavior by uncommenting the line in the \pyinline{Settings.Config} class.
@@ -332,7 +341,7 @@ The order in which Pydantic reads environment variables is as follows:
     \item Fallback to default values (127.0.0.1 and 5432 in our case)
 \end{enumerate}
 
-That means \bashinline{export DB\_HOST=10.0.0.1} will take precedence over \\\bashinline{DB\_HOST=127.0.0.1} from \textbf{.env}.
+That means \bashinline{export DB\_HOST=10.0.0.1} will take precedence over \bashinline{DB\_HOST=127.0.0.1} from \textbf{.env}.
 
 \note If you're using development and/or deployment via Docker/Docker Compose, you most probably \textbf{don't} need to use env file configuration in a Pydantic class - in this case environment variables are defined and passed to applications using one of the following means:
 
@@ -341,8 +350,6 @@ That means \bashinline{export DB\_HOST=10.0.0.1} will take precedence over \\\ba
     \item \bashinline{docker run} \texttt{--env-file filename}
     \item \texttt{env\_file} field in \texttt{docker-compose.yml}
 \end{itemize}
-
-All required environment variables are then read by Pydantic when \pyinline{Settings} is initialized as a variable (see line \ref{config.py1:si}) in File \ref{config.py1}).
 
 If you still have questions, read up on official FastAPI docs for settings management, which should answer them all \flink{https://fastapi.tiangolo.com/advanced/settings}.
 
@@ -362,7 +369,42 @@ Another option would be using more advanced images which include most of the nee
 
 That image automatically includes and sets up Uvicorn and Gunicorn (more on that later), and actually launches your application from a fixed Python file location (i.e. you create the file in that location and the image reads that file during deployment).
 
-\subsubsection{\texttt{docker-compose.yaml}}
+Here's the template Dockerfile \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#using-poetry}, which we'll get to editing in a moment.
+
+\begin{dockercode}[\texttt{Dockerfile}]
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.7
+
+# Install Poetry
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python && \
+    cd /usr/local/bin && \
+    ln -s /opt/poetry/bin/poetry && \
+    poetry config virtualenvs.create false
+
+# Copy using poetry.lock* in case it doesn't exist yet
+COPY ./app/pyproject.toml ./app/poetry.lock* /app/
+
+RUN poetry install --no-root --no-dev
+
+COPY ./app /app
+\end{dockercode}
+
+\paragraph{Suiting the image to our needs}
+
+The image's README \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#how-to-use} suggests placing our \texttt{main.py} file (and, consequently, the rest of the source code) into \texttt{app} directory - the \texttt{app/main.py} is where the image looks for an \pyinline{app} variable (i.e. FastAPI object - similar to passing \texttt{main:app} to uWSGI).
+
+It is quite likely that you will want to structure your code as a Python package and have different naming applied to it. In our case, the source code is contained in the \texttt{pyfh} folder, not \texttt{app}. So, there are two ways to circumvent the requirement described above.
+
+\begin{itemize}
+    \item{In Dockerfile, manually map the app structure to an image conformant one:
+        \begin{dockercode}
+COPY ./pyproject.toml ./poetry.lock* /app/
+COPY ./pyfh /app
+        \end{dockercode}
+        This method still has the drawback of having to conform to variable naming and is more error-prone in general, since you now have to keep track of in-image project structure, as well as adjust the rest of the project (tests, CI, etc.)}
+    \item{Use environment variables via \dockerinline{docker run -e} (see Docker environment variables passing in Section \ref{preparations:configenv}) or Docker Compose. In the image we're using, you can pass your new main file location (via \texttt{MODULE\_NAME}), FastAPI app variable name (\texttt{VARIABLE\_NAME}), and so on \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#advanced-usage}. We'll use that option when writing a Docker Compose file (Section \ref{preparations:dockercompose})}
+\end{itemize}
+
+\subsubsection{\texttt{docker-compose.yaml}\label{preparations:dockercompose}}
 
 \subsubsection{\texttt{.dockerignore}}
 
