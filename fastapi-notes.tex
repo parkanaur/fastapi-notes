@@ -22,8 +22,8 @@
 \onehalfspacing
 \setlist{noitemsep}
 \newcommand{\sectionbreak}{\clearpage}
-%\setcounter{tocdepth}{2}
-%\setcounter{secnumdepth}{4}
+%\setcounter{tocdepth}{4}
+\setcounter{secnumdepth}{3}
 
 \titleformat{\paragraph}
 {\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
@@ -344,21 +344,25 @@ The order in which Pydantic reads environment variables is as follows:
 
 That means \bashinline{export DB\_HOST=10.0.0.1} will take precedence over \bashinline{DB\_HOST=127.0.0.1} from \textbf{.env}.
 
-\note If you're using development and/or deployment via Docker/Docker Compose, you most probably \textbf{don't} need to use env file configuration in a Pydantic class - in this case environment variables are defined and passed to the application using one of the following means:
+\note If you're using development and/or deployment via Docker/Docker Compose, you most probably \textbf{don't} need to use env file configuration in a Pydantic class - in this case environment variables are defined and passed to the application using Docker commands - see Section \ref{preparations:dockerenvs}
+
+If you still have questions, read up on official FastAPI docs for settings management, which should answer them all \flink{https://fastapi.tiangolo.com/advanced/settings}.
+
+\subsection{Docker configuration}
+
+In layman's terms, a Docker image is a packaged environment (like virtualenv, but it encapsulates the whole operating system) which contains your project and which can be configured, deployed and run in one command on any Linux machine which has Docker server installed.
+
+While you certainly can make do without Docker, integrating it into your workflow could save a lot of time during development of deployment routines and during deployment itself.
+
+\subsubsection{Passing environment variables to Docker containers\label{preparations:dockerenvs}}
+
+You can pass environment variables to Docker containers during startup:
 
 \begin{itemize}
     \item \bashinline{docker run -e VAR_NAME=var_value}
     \item \bashinline{docker run} \texttt{--env-file filename}
     \item \texttt{env\_file} field in \texttt{docker-compose.yml}
 \end{itemize}
-
-If you still have questions, read up on official FastAPI docs for settings management, which should answer them all \flink{https://fastapi.tiangolo.com/advanced/settings}.
-
-\subsection{Docker configuration}
-
-In layman's terms, a Docker image is a packaged environment (like virtualenv) which contains your project and which can be configured, deployed and run in one command on any Linux machine which has Docker server installed.
-
-While you certainly can make do without Docker, integrating it into your workflow could save a lot of time during development of deployment routines and during deployment itself.
 
 \subsubsection{\texttt{Dockerfile}}
 
@@ -370,10 +374,10 @@ Another option would be using more advanced images which include most of the nee
 
 That image automatically includes and sets up Uvicorn and Gunicorn (more on that later), and actually launches your application from a fixed Python file location (i.e. you create the file in that location and the image reads that file during deployment).
 
-Here's the template Dockerfile \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#using-poetry}, which we'll get to editing in a moment.
+Here's the template Dockerfile \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#using-poetry}, adjusted for our project.
 
 \begin{dockercode}[\texttt{Dockerfile}]
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.7
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8
 
 # Install Poetry
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python && \
@@ -382,29 +386,36 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
     poetry config virtualenvs.create false
 
 # Copy using poetry.lock* in case it doesn't exist yet
-COPY ./app/pyproject.toml ./app/poetry.lock* /app/
+COPY pyproject.toml poetry.lock* /app/
 
 RUN poetry install --no-root --no-dev
 
-COPY ./app /app
+COPY . /app
 \end{dockercode}
 
 \paragraph{Suiting the image to our needs}
 
-The image's README \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#how-to-use} suggests placing our \texttt{main.py} file (and, consequently, the rest of the source code) into \texttt{app} directory - the \texttt{app/main.py} is where the image looks for an \pyinline{app} variable (i.e. FastAPI object - similar to passing \texttt{main:app} to uWSGI).
+\note If you're writing your Dockerfile from the ground up, without using another image as a starting point, you don't need to read this subsection.
 
-It is quite likely that you will want to structure your code as a Python package and have different naming applied to it. In our case, the source code is contained in the \texttt{pyfh} folder, not \texttt{app}. So, there are two ways to circumvent the requirement described above.
+The image's README \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#how-to-use} suggests placing our \texttt{main.py} file (and, consequently, the rest of the source code) into \texttt{/app} directory - the \texttt{/app/main.py} is where the image looks for an \pyinline{app} variable (i.e. FastAPI object - similar to passing \texttt{main:app} to uWSGI).
 
-\begin{itemize}
-    \item{In Dockerfile, manually map the app structure to an image conformant one:
-        \begin{dockercode}
-COPY ./pyproject.toml ./poetry.lock* /app/
-COPY ./pyfh /app
-        \end{dockercode}
-        This method still has the drawback of having to conform to variable naming and is more error-prone in general, since you now have to keep track of in-image project structure, as well as adjust the rest of the project (tests, CI, etc.)}
+You can control where the image will read your FastAPI object from by using environment variables: via \dockerinline{docker run -e} (see Docker environment variables passing in Section \ref{preparations:configenv}) or Docker Compose. In the image we're using, you can pass your new main file location (via the \texttt{MODULE\_NAME} variable), FastAPI app variable name (\texttt{VARIABLE\_NAME}), and so on \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#advanced-usage}. We'll use that option when writing a Docker Compose file (Section \ref{preparations:dockercompose})
 
-    \item{Use environment variables via \dockerinline{docker run -e} (see Docker environment variables passing in Section \ref{preparations:configenv}) or Docker Compose. In the image we're using, you can pass your new main file location (via the \texttt{MODULE\_NAME} variable), FastAPI app variable name (\texttt{VARIABLE\_NAME}), and so on \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#advanced-usage}. We'll use that option when writing a Docker Compose file (Section \ref{preparations:dockercompose})}
-\end{itemize}
+Example (assume your \texttt{main.py} has been renamed to \texttt{other\_main\_file.py} and your \pyinline{app = FastAPI()} has been replaced with \pyinline{api = FastAPI()}):
+
+\begin{bashcode}
+    docker run -e APP_MODULE="other_main_file:api" image
+\end{bashcode}
+
+\note The image creates and uses as a working directory the \texttt{/app} directory (i.e. a folder on the same level as \texttt{/home}, \texttt{/var}, \texttt{/usr} and so on) - this might confuse you the first time you're reading its documentation. This picture should clear up any questions on how project-to-Docker-image mapping operates:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/docker_mapping.png}
+    \caption{File mapping and environment variables}
+\end{figure}
+
+The \texttt{APP\_MODULE} variable is actually used by Gunicorn to launch the app. It is either deduced from \texttt{MODULE\_NAME} and \texttt{VARIABLE\_NAME} or overridden by the user.
 
 \subsubsection{\texttt{docker-compose.yml}\label{preparations:dockercompose}}
 
@@ -425,6 +436,8 @@ Dockerignore is to Docker what gitignore is to git. You don't want to include in
 \subsubsection{Nginx: inside or outside of Docker?}
 
 \subsubsection{Docker cache invalidation and command order}
+
+\subsubsection{Parent and child image caveats in Docker}
 
 \section{Domain Model}
 
