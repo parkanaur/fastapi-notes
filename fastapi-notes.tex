@@ -452,6 +452,29 @@ volumes:
     data:
 \end{dockercode}
 
+\dockerinline{services} is a collection of containers your app will have.
+
+\dockerinline{build} is how to build the container image - i.e. in which folder your \texttt{Dockerfile} is located.
+
+\dockerinline{depends_on} defines which container/s has/ve to be created \textbf{before} this container is created. We need database set up before the backend API is initialized - can't send requests to a null database.
+
+\dockerinline{env_file} passes the environment variables from the passed file to the container.
+
+\dockerinline{ports} is defined in a few ways:
+
+\begin{enumerate}
+    \item{
+            \texttt{"port1:port2"}
+
+            Here, \texttt{port1} is the port on which this container's app is exposed \textbf{to the host machine.}
+
+            \texttt{port2} is the port \textbf{in the container} on which your application is running on.
+        }
+    \item{
+            \texttt{"port1"}
+        }
+\end{enumerate}
+
 \subsubsection{\texttt{.dockerignore}}
 
 Dockerignore is to Docker what gitignore is to git. You don't want to include intermediate files in your image to save space, and you don't want sensitive data left behind as well. The rule of thumb is that you include everything you'd include in \texttt{.gitignore} plus a few more additions to reduce image size (e.g. \texttt{.git} folder).
