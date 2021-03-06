@@ -71,11 +71,11 @@
 % Docker code listings
 \lstdefinelanguage{docker}{
     basicstyle=\ttfamily\small,
-    keywords={FROM, RUN, COPY, ADD, ENTRYPOINT, CMD,  ENV, ARG, WORKDIR, EXPOSE, LABEL, USER, VOLUME, STOPSIGNAL, ONBUILD, MAINTAINER,
-    image, environment, ports, container\_name, ports, links, build, version, volumes, services, networks},
+    keywords={FROM, RUN, COPY, ADD, ENTRYPOINT, CMD, ENV, ARG, WORKDIR, EXPOSE, LABEL, USER, VOLUME, STOPSIGNAL, ONBUILD, MAINTAINER,
+    image, environment, ports, container\_name, ports, links, env\_file, depends\_on, build, version, volumes, services, networks},
     keywordstyle=\color{blue}\bfseries,
     identifierstyle=\color{black},
-    sensitive=false,
+    sensitive=true,
     comment=[l]{\#},
     commentstyle=\color{darkgray}\small
 }
@@ -273,7 +273,7 @@ Setting up proper configuration for your project can be hard, especially if you 
 
 \subsubsection{Environment variables}
 
-It is common practice to use \textbf{environment variables} as configuration source for applications. They're used extensively in Docker and Docker Compose too.
+It is common to use \textbf{environment variables} as configuration source for applications. They're used extensively in Docker and Docker Compose too.
 
 In Linux, env variables are set the following way:
 
@@ -377,7 +377,12 @@ That image automatically includes and sets up Uvicorn and Gunicorn (more on that
 Here's the template Dockerfile \flink{https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker\#using-poetry}, adjusted for our project.
 
 \begin{dockercode}[\texttt{Dockerfile}]
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8-slim
+
+# slim image does not include curl - a small price to pay for extra 400mb of free space
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python && \
@@ -422,7 +427,29 @@ The \texttt{APP\_MODULE} variable is actually used by Gunicorn to launch the app
 Docker Compose allows you to define, execute, and manage a single-/multicontainer application using YAML files. In our case, apart from the FastAPI application, we're going to be using a PostgreSQL database (in its own conatiner) and a frontend application (we'll worry about that later). Let's look at our \texttt{docker-compose.yml}:
 
 \begin{dockercode}
+version: "3.8"
 
+services:
+    backend:
+        build: .
+        depends_on:
+            - database
+        env_file:
+            - .env
+        ports:
+            - "8000:8000"
+
+    database:
+        image: postgres:12
+        env_file:
+            - .env
+        ports:
+            - "5432:5432"
+        volumes:
+            - data:/var/lib/postgresql/data
+
+volumes:
+    data:
 \end{dockercode}
 
 \subsubsection{\texttt{.dockerignore}}
