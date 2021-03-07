@@ -5,6 +5,7 @@
 \usepackage{url}
 \usepackage[margin=.5in]{geometry}
 \usepackage{xcolor}
+\usepackage{float}
 \usepackage{lipsum}
 \usepackage{setspace}
 \usepackage{listings}
@@ -470,14 +471,14 @@ volumes:
 
             \texttt{port2} is the port \textbf{in the container} on which your application is running on.
 
+            Assume the port mapping \texttt{"8000:80"}, as described in Figure \ref{preparations:dockerports}.
+
             \begin{figure}[h]
                 \centering
-                \includegraphics[width=0.7\textwidth]{img/docker_ports.png}
+                \includegraphics[width=0.55555\textwidth]{img/docker_ports.png}
                 \caption{Example ports setup}
                 \label{preparations:dockerports}
             \end{figure}
-
-            Assume the port mapping \texttt{"8000:80"}, as described on Figure \ref{preparations:dockerports}.
 
             The port \texttt{8000} on machine \texttt{\color[HTML]{9933FF} 123.456.78.90} then redirects all requests to whatever is running on port \texttt{80} on Docker container \texttt{\color[HTML]{3333FF} serviceC}.
 
@@ -489,8 +490,6 @@ volumes:
             This setting makes the port \texttt{port1} available on the host machine via a \textbf{random} (ephemeral) unused port and is used to avoid port collisions. You can then find out what port on the host machine maps to container port via \texttt{netstat} or some other tool.
         }
 \end{enumerate}
-
-\paragraph{Networks}
 
 \subsubsection{\texttt{.dockerignore}}
 
@@ -505,6 +504,8 @@ Dockerignore is to Docker what gitignore is to git. You don't want to include in
 \subsubsection{Docker cache invalidation and command order}
 
 \subsubsection{Parent and child image caveats in Docker}
+
+\subsubsection{Docker networks}
 
 \section{Domain Model}
 
