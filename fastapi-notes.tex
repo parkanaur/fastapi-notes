@@ -460,7 +460,7 @@ volumes:
 
 \dockerinline{env_file} passes the environment variables from the passed file to the container.
 
-\dockerinline{ports} is defined in a few ways:
+\dockerinline{ports} exposes selected container ports \textbf{to host machine, \textcolor{red}{not} the other containers} - the other containers in the \textbf{virtual} network can already access any port of any container they need. \dockerinline{ports} are defined in a few ways (more in official Docker documentation \flink{https://docs.docker.com/compose/compose-file/compose-file-v3/\#ports}):
 
 \begin{enumerate}
     \item{
@@ -469,11 +469,28 @@ volumes:
             Here, \texttt{port1} is the port on which this container's app is exposed \textbf{to the host machine.}
 
             \texttt{port2} is the port \textbf{in the container} on which your application is running on.
+
+            \begin{figure}[h]
+                \centering
+                \includegraphics[width=0.7\textwidth]{img/docker_ports.png}
+                \caption{Example ports setup}
+                \label{preparations:dockerports}
+                            \end{figure}
+
+            Assume the port mapping \texttt{"8000:80"}, as described on Figure \ref{preparations:dockerports}.
+
+            The port \texttt{8000} on machine \texttt{\color[HTML]{9933FF} 123.456.78.90} then redirects all requests to whatever is running on port \texttt{80} on Docker container \texttt{\color[HTML]{3333FF} serviceC}.
+
+            The port \texttt{80} of \texttt{\color[HTML]{3333FF} serviceC} is available straight away from the rest of the containers on the virtual network (aka all the other containers in \dockerinline{services}), as are all the other ports.
         }
     \item{
             \texttt{"port1"}
+
+            This setting makes the port \texttt{port1} available on the host machine via a \textbf{random} (ephemeral) unused port and is used to avoid port collisions. You can then find out what port on the host machine maps to container port via \texttt{netstat} or some other tool.
         }
 \end{enumerate}
+
+\paragraph{Networks}
 
 \subsubsection{\texttt{.dockerignore}}
 
