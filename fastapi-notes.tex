@@ -460,7 +460,7 @@ volumes:
 
 \dockerinline{env_file} passes the environment variables from the passed file to the container.
 
-\dockerinline{ports} exposes selected container ports \textbf{to host machine, \textcolor{red}{not} the other containers} - the other containers in the \textbf{virtual} network can already access any port of any container they need. \dockerinline{ports} are defined in a few ways (more in official Docker documentation \flink{https://docs.docker.com/compose/compose-file/compose-file-v3/\#ports}):
+\dockerinline{ports} exposes selected container ports \textbf{to host machine, \textcolor{red}{not} the other containers} - the other containers in the \textbf{virtual} network can already access \textbf{any port of any container they need}. \dockerinline{ports} are defined in a few ways (more in official Docker documentation \flink{https://docs.docker.com/compose/compose-file/compose-file-v3/\#ports}):
 
 \begin{enumerate}
     \item{
@@ -475,7 +475,7 @@ volumes:
                 \includegraphics[width=0.7\textwidth]{img/docker_ports.png}
                 \caption{Example ports setup}
                 \label{preparations:dockerports}
-                            \end{figure}
+            \end{figure}
 
             Assume the port mapping \texttt{"8000:80"}, as described on Figure \ref{preparations:dockerports}.
 
