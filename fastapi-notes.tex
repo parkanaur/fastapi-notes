@@ -73,7 +73,7 @@
 \lstdefinelanguage{docker}{
     basicstyle=\ttfamily\small,
     keywords={FROM, RUN, COPY, ADD, ENTRYPOINT, CMD, ENV, ARG, WORKDIR, EXPOSE, LABEL, USER, VOLUME, STOPSIGNAL, ONBUILD, MAINTAINER,
-    image, environment, ports, container\_name, ports, links, env\_file, depends\_on, build, version, volumes, services, networks},
+    image, environment, expose, ports, container\_name, ports, links, env\_file, depends\_on, build, version, volumes, services, networks},
     keywordstyle=\color{blue}\bfseries,
     identifierstyle=\color{black},
     sensitive=true,
@@ -447,10 +447,10 @@ services:
         ports:
             - "5432:5432"
         volumes:
-            - data:/var/lib/postgresql/data
+            - pg_data:/var/lib/postgresql/data
 
 volumes:
-    data:
+    pg_data:
 \end{dockercode}
 
 \dockerinline{services} is a collection of containers your app will have.
@@ -461,7 +461,9 @@ volumes:
 
 \dockerinline{env_file} passes the environment variables from the passed file to the container.
 
-\dockerinline{ports} exposes selected container ports \textbf{to host machine, \textcolor{red}{not} the other containers} - the other containers in the \textbf{virtual} network can already access \textbf{any port of any container they need}. \dockerinline{ports} are defined in a few ways (more in official Docker documentation \flink{https://docs.docker.com/compose/compose-file/compose-file-v3/\#ports}):
+\paragraph{Docker ports and expose}
+
+\dockerinline{ports} exposes selected container ports \textbf{to host machine, \textcolor{red}{not} the other containers} - the command to expose to other containers in the network is \dockerinline{EXPOSE} in \texttt{Dockerfile} or \dockerinline{expose} in \texttt{docker-compose.yml}. \dockerinline{ports} are defined in a few ways (more in official Docker documentation \flink{https://docs.docker.com/compose/compose-file/compose-file-v3/\#ports}):
 
 \begin{enumerate}
     \item{
@@ -471,18 +473,16 @@ volumes:
 
             \texttt{port2} is the port \textbf{in the container} on which your application is running on.
 
-            Assume the port mapping \texttt{"8000:80"}, as described in Figure \ref{preparations:dockerports}.
+            Assume the port mapping \texttt{"8000:80"}, as described in Figure \ref{preparations:dockerports_pic}.
 
-            \begin{figure}[h]
+            \begin{figure}[H]
                 \centering
-                \includegraphics[width=0.55555\textwidth]{img/docker_ports.png}
+                \includegraphics[width=0.5\textwidth]{img/docker_ports.png}
                 \caption{Example ports setup}
-                \label{preparations:dockerports}
+                \label{preparations:dockerports_pic}
             \end{figure}
 
             The port \texttt{8000} on machine \texttt{\color[HTML]{9933FF} 123.456.78.90} then redirects all requests to whatever is running on port \texttt{80} on Docker container \texttt{\color[HTML]{3333FF} serviceC}.
-
-            The port \texttt{80} of \texttt{\color[HTML]{3333FF} serviceC} is available straight away from the rest of the containers on the virtual network (aka all the other containers in \dockerinline{services}), as are all the other ports.
         }
     \item{
             \texttt{"port1"}
@@ -490,6 +490,65 @@ volumes:
             This setting makes the port \texttt{port1} available on the host machine via a \textbf{random} (ephemeral) unused port and is used to avoid port collisions. You can then find out what port on the host machine maps to container port via \texttt{netstat} or some other tool.
         }
 \end{enumerate}
+
+For an example usage of \dockerinline{EXPOSE}, you can refer to Dockerfile for the \texttt{postgres} image \flink{https://github.com/docker-library/postgres/blob/master/Dockerfile-alpine.template\#L182}. Whenever you're using that image, you don't need to expose the 5432 port, as it's already exposed as per the Dockerfile instruction (\dockerinline{EXPOSE 5432}). 5432 is accessible by default from other containers in the network, but you may also want to be able to access the database from the host machine - in which case you'll have to use \dockerinline{ports}.
+
+\paragraph{Docker volumes}
+
+\dockerinline{volumes} are used to:
+
+\begin{itemize}
+    \item{\textbf{persist data between container recreations.} Whenever a container is recreated, its "writable layer" (a.k.a. container filesystem after the last Dockerfile instruction is executed) is destroyed and created anew, restoring all data (e.g. filesystem files - that includes database contents) to image defaults, as if you've just created a new container.
+
+        Volumes are created and persisted \textbf{on the host machine} in a special place (\texttt{/var/lib/docker/volumes} by default). After the container is (re)created, these volumes are mounted inside the container. How and where they are mounted is specified by Docker/Docker Compose instructions:
+
+        \begin{dockercode}[Volume definitions in Docker Compose file (see Figure \ref{preparations:dockervolumes_pic})]
+            ...
+
+            services:
+                ...
+                serviceC:
+                    ...
+                    volumes:
+                        - pg_data:/var/lib/postgresql/data
+                        - /home/user/some_folder:/opt/more_data
+
+            volumes:
+                # Docker files are created automatically for this volume in /var/lib/docker/volumes
+                pg_data:
+        \end{dockercode}
+
+        \begin{figure}[H]
+            \centering
+            \includegraphics[width=0.9\textwidth]{img/docker_volumes.png}
+            \caption{How volume mounting works for named volumes and host-mounted directories}
+            \label{preparations:dockervolumes_pic}
+        \end{figure}
+
+        }
+    \item{\textbf{share data between multiple containers.} Obviously, the same volume can be mounted on multiple containers in the network.
+
+        \begin{dockercode}
+            ...
+
+            services:
+                serviceA:
+                    ...
+                    volumes:
+                        - some_volume:/opt/data
+                serviceB:
+                    ...
+                    volumes:
+                        - some_volume:/var/diff_data
+                ...
+            ...
+            volumes:
+                some_volume:
+        \end{dockercode}
+        }
+\end{itemize}
+
+You can read more about volumes in the official documentation \flink{https://docs.docker.com/storage/} \flink{https://docs.docker.com/compose/compose-file/compose-file-v3/\#volumes}.
 
 \subsubsection{\texttt{.dockerignore}}
 
