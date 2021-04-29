@@ -461,7 +461,7 @@ volumes:
 
 \dockerinline{env_file} passes the environment variables from the passed file to the container.
 
-\paragraph{Docker ports and expose}
+\paragraph{Docker \dockerinline{ports} and \dockerinline{expose}}
 
 \dockerinline{ports} exposes selected container ports \textbf{to host machine, \textcolor{red}{not} the other containers} - the command to expose to other containers in the network is \dockerinline{EXPOSE} in \texttt{Dockerfile} or \dockerinline{expose} in \texttt{docker-compose.yml}. \dockerinline{ports} are defined in a few ways (more in official Docker documentation \flink{https://docs.docker.com/compose/compose-file/compose-file-v3/\#ports}):
 
@@ -511,6 +511,7 @@ For an example usage of \dockerinline{EXPOSE}, you can refer to Dockerfile for t
                     ...
                     volumes:
                         - pg_data:/var/lib/postgresql/data
+                        # technically this is a bind mount - a directory from host machine is mounted inside the container
                         - /home/user/some_folder:/opt/more_data
 
             volumes:
@@ -558,9 +559,31 @@ Dockerignore is to Docker what gitignore is to git. You don't want to include in
 
 \subsubsection{On Gunicorn, Uvicorn and Nginx integration}
 
-\subsubsection{Nginx: inside or outside of Docker?}
+It might seem too much to have the actual app hidden behind multiple middlemen, but there are valid reasons to use mentioned tools:
+
+\begin{itemize}
+	\item{\textbf{Uvicorn.} This actually launches your app the way you would launch it via \bashinline{python script.py}, but with included asynchronicity.}
+    \item{\textbf{Gunicorn.} It manages the number of uvicorn workers for added resilience and effectiveness.}
+    \item{\textbf{Nginx.} Might not be necessary if you're running your setup on something like AWS where reverse proxying is handled automatically, but otherwise it manages incoming requests and allows to route them to multiple apps, if you have them. It also handles static files better than other instruments could.}
+\end{itemize}
+
+\subsubsection{Containerized nginx}
+
+There is an official Docker image for nginx \flink{INSERT IMAGE LINK} and you can use it for a fully containerized setup, but if you're running more than one web application on your own server, I'd recommend leaving nginx outside Docker - otherwise you risk having headaches from having to configure nginx to handle multiple Docker networks for different applications. From my experience, configuring nginx in Docker appears to be a more tedious task in general. On the other hand, if you have multiple hardware setups and need to synchronize deployments easily, using dockerized nginx might be a good option.
+
+There is an excellent article which covers this topic in more detail and describes (dis-)advantages of both solutions \flink {INSERT ARTICLE HERE}.
 
 \subsubsection{Docker cache invalidation and command order}
+
+You could also familiarize yourself with how Docker image building works.
+
+\textbf{In layman's terms}, when writing a Dockerfile, the more files change (e.g. actual source code), the further down the Dockerfile should the instructions for handling those files be. OS libraries go first, project dependencies afterwards, source code next, and finally, the application launching code.
+
+This is because Docker caches every layer (a.k.a. a single Dockerfile instruction) internally based on the state of the files inside image root, and if some file is changed, the image rebuilding process starts over from the first instruction which handles that file, since the libraries installed before in Dockerfile remain unchanged.
+
+Every layer depends on previous layer, so if cache for one layer is invalidated (e.g. changed files), the rest of the layers are too, and all following instructions are run anew (including less related stuff such as OS manipulation and libraries install).
+
+Read up more on Docker cache here: \flink{INSERT DOCKER HELP LINK}.
 
 \subsubsection{Parent and child image caveats in Docker}
 
